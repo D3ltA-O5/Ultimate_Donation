@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 
 public class RoleManager
 {
@@ -13,7 +12,7 @@ public class RoleManager
     public void AddDonation(string steamId, string role, int days)
     {
         if (!_config.DonatorRoles.ContainsKey(role))
-            throw new ArgumentException("Роль не существует.");
+            throw new ArgumentException("Роль не существует в конфиге.");
 
         _config.PlayerDonations[steamId] = new PlayerDonation
         {
@@ -36,6 +35,13 @@ public class RoleManager
 
     public string GetDonatorRole(string steamId)
     {
-        return _config.PlayerDonations.ContainsKey(steamId) ? _config.PlayerDonations[steamId].Role : string.Empty;
+        if (!_config.PlayerDonations.TryGetValue(steamId, out var donation))
+            return string.Empty;
+
+        // Проверим, не истёк ли донат
+        if (donation.ExpiryDate <= DateTime.Now)
+            return string.Empty;
+
+        return donation.Role;
     }
 }

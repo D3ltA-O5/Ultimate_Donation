@@ -12,6 +12,8 @@
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -125,6 +127,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AddRoleCommand.cs" />
+    <Compile Include="ChangeRoleCommand.cs" />
     <Compile Include="CheckLimitsCommand.cs" />
     <Compile Include="Config.cs" />
     <Compile Include="CooldownManager.cs" />

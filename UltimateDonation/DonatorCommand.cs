@@ -4,7 +4,6 @@ using System;
 using Exiled.API.Features;
 using PluginAPI.Roles;
 
-
 [CommandHandler(typeof(RemoteAdminCommandHandler))]
 public class DonatorCommand : ICommand
 {
@@ -20,71 +19,81 @@ public class DonatorCommand : ICommand
     }
 
     public string Command => "donator";
-
     public string[] Aliases => new[] { "don" };
-
-    public string Description => "Управление донатными привилегиями.";
+    public string Description => "Управление донатными привилегиями (для админов через RA).";
 
     public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
     {
-        // Проверяем, что отправитель — игрок
-        if (!(sender is PlayerCommandSender playerSender))
-        {
-            response = "Эту команду может выполнить только игрок.";
-            return false;
-        }
+        // Например, RA-админ может прописать: donator addrole <SteamID> <RoleName> <Days>
+        // или donator removerole <SteamID>
+        // или donator checklimits <SteamID>
+        // Для упрощения просто покажем мини-диспетчер:
 
-        // Получаем объект Player для отправителя
-        var player = Player.Get(playerSender.ReferenceHub);
-        if (player == null)
-        {
-            response = "Не удалось найти игрока.";
-            return false;
-        }
-
-        // Проверяем, является ли игрок донатором
-        if (!_roleManager.IsDonator(player.UserId))
-        {
-            response = "Вы не являетесь донатором.";
-            return false;
-        }
-
-        // Получаем роль игрока
-        var roleName = _roleManager.GetDonatorRole(player.UserId);
-        if (!_config.DonatorRoles.TryGetValue(roleName, out var donatorRole))
-        {
-            response = "Роль донатора не найдена.";
-            return false;
-        }
-
-        // Проверяем аргументы команды
         if (arguments.Count == 0)
         {
-            response = "Не указана команда. Используйте: /donator <команда>";
+            response = "Использование: donator <addrole|removerole|checklimits> ...";
             return false;
         }
 
-        var commandName = arguments.At(0);
-
-        // Проверяем разрешения
-        if (!donatorRole.Permissions.Contains(commandName))
+        var subCmd = arguments.At(0).ToLower();
+        switch (subCmd)
         {
-            response = "У вас недостаточно прав для выполнения этой команды.";
-            return false;
+            case "addrole":
+                // Можно переиспользовать AddRoleCommand напрямую, либо просто скопировать логику
+                // Ниже — короткая версия
+                if (arguments.Count < 4)
+                {
+                    response = "Использование: donator addrole <SteamID> <RoleName> <Days>";
+                    return false;
+                }
+                var steamId = arguments.At(1);
+                var roleName = arguments.At(2);
+                if (!int.TryParse(arguments.At(3), out var days))
+                {
+                    response = "Days должно быть числом.";
+                    return false;
+                }
+                if (!_config.DonatorRoles.ContainsKey(roleName))
+                {
+                    response = $"Роль {roleName} не найдена в конфиге.";
+                    return false;
+                }
+                _roleManager.AddDonation(steamId, roleName, days);
+                response = $"Игроку {steamId} добавлена роль {roleName} на {days} дней.";
+                return true;
+
+            case "removerole":
+                if (arguments.Count < 2)
+                {
+                    response = "Использование: donator removerole <SteamID>";
+                    return false;
+                }
+                steamId = arguments.At(1);
+                _roleManager.RemoveDonation(steamId);
+                response = $"С {steamId} снята донат-роль.";
+                return true;
+
+            case "checklimits":
+                if (arguments.Count < 2)
+                {
+                    response = "Использование: donator checklimits <SteamID>";
+                    return false;
+                }
+                steamId = arguments.At(1);
+                if (!_roleManager.IsDonator(steamId))
+                {
+                    response = "У игрока нет активной донат-роли.";
+                    return false;
+                }
+                var r = _roleManager.GetDonatorRole(steamId);
+                response = _config.DonatorRoles.ContainsKey(r)
+                    ? $"Лимиты для роли {r}: смена роли {_config.DonatorRoles[r].RoleChangeLimit} раз, выдача предметов {_config.DonatorRoles[r].ItemGiveLimit} раз, и т. п."
+                    : $"Не найдена роль {r} в конфиге.";
+                return true;
+
+            default:
+                response = "Неизвестная субкоманда.";
+                return false;
         }
-
-        // Проверяем лимиты на выполнение команды
-        if (!_cooldownManager.CanExecuteCommand(player.UserId, commandName))
-        {
-            response = "Команда находится на перезарядке. Попробуйте позже.";
-            return false;
-        }
-
-        // Регистрируем использование команды
-        _cooldownManager.RegisterCommandUsage(player.UserId, commandName);
-
-        // Если команда успешно выполнена
-        response = $"Команда '{commandName}' успешно выполнена!";
-        return true;
     }
 }

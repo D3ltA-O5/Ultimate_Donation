@@ -1,23 +1,21 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using Discord.WebSocket;
 using Discord;
-using Discord.WebSocket;
-using PluginAPI.Roles;
+using System.Threading.Tasks;
+using System;
 
 public class DiscordManager
 {
     private readonly DiscordSocketClient _client;
-    private readonly PermissionsManager _permissionsManager;
     private readonly RoleManager _roleManager;
-
     private readonly string _token;
+    private readonly ulong _guildId;
     private readonly ulong _channelId;
 
-    public DiscordManager(string token, ulong channelId, PermissionsManager permissionsManager, RoleManager roleManager)
+    public DiscordManager(string token, ulong guildId, ulong channelId, RoleManager roleManager)
     {
         _token = token;
+        _guildId = guildId;
         _channelId = channelId;
-        _permissionsManager = permissionsManager;
         _roleManager = roleManager;
 
         _client = new DiscordSocketClient();
@@ -44,21 +42,47 @@ public class DiscordManager
 
     private async Task MessageReceivedAsync(SocketMessage message)
     {
+        // Игнорируем сообщения не из нужного канала и от ботов
         if (message.Channel.Id != _channelId || message.Author.IsBot)
             return;
 
         var args = message.Content.Split(' ');
-        if (args.Length < 3) return;
+        if (args.Length == 0) return;
 
-        var command = args[0];
-        var steamId = args[1];
-        var role = args[2];
-        var days = args.Length > 3 ? int.Parse(args[3]) : 0;
+        var command = args[0].ToLower();
 
+        // Пример команды "!addrole STEAM_0:1:12345 vip 10"
         if (command == "!addrole")
         {
+            if (args.Length < 4)
+            {
+                await message.Channel.SendMessageAsync("Использование: !addrole <SteamID> <RoleName> <Days>");
+                return;
+            }
+
+            var steamId = args[1];
+            var role = args[2];
+            if (!int.TryParse(args[3], out int days))
+            {
+                await message.Channel.SendMessageAsync("Days должно быть числом.");
+                return;
+            }
+
             _roleManager.AddDonation(steamId, role, days);
-            await message.Channel.SendMessageAsync($"Роль {role} успешно добавлена для игрока {steamId} на {days} дней.");
+            await message.Channel.SendMessageAsync($"Роль {role} добавлена игроку {steamId} на {days} дн.");
         }
+        else if (command == "!removerole")
+        {
+            if (args.Length < 2)
+            {
+                await message.Channel.SendMessageAsync("Использование: !removerole <SteamID>");
+                return;
+            }
+
+            var steamId = args[1];
+            _roleManager.RemoveDonation(steamId);
+            await message.Channel.SendMessageAsync($"С {steamId} снята донат-роль.");
+        }
+        // Можете добавить "!adddays", "!checklimits" и т. д.
     }
 }

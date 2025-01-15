@@ -1,41 +1,64 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using Exiled.API.Features;
 
 public class CooldownManager
 {
-    // Хранение времени отката команд для каждого пользователя
-    private readonly Dictionary<string, Dictionary<string, DateTime>> _commandCooldowns =
-        new Dictionary<string, Dictionary<string, DateTime>>();
+    // Храним для каждой роли — для каждой команды — максимально допустимое число в раунд
+    private readonly Dictionary<string, Dictionary<string, int>> _usageLimits;
+    // А тут считаем фактически использованное кол-во команд конкретным игроком
+    // userId -> (command -> current usage)
+    private readonly Dictionary<string, Dictionary<string, int>> _commandUsages;
 
-    /// <summary>
-    /// Проверяет, может ли пользователь выполнить команду.
-    /// </summary>
-    /// <param name="userId">ID пользователя.</param>
-    /// <param name="commandName">Имя команды.</param>
-    /// <returns>True, если команда доступна, иначе False.</returns>
-    public bool CanExecuteCommand(string userId, string commandName)
+    public CooldownManager(Config config)
     {
-        // Если у пользователя нет записанных команд или указанной команды нет, выполнение разрешено
-        if (!_commandCooldowns.ContainsKey(userId) || !_commandCooldowns[userId].ContainsKey(commandName))
-            return true;
+        _usageLimits = new Dictionary<string, Dictionary<string, int>>();
+        _commandUsages = new Dictionary<string, Dictionary<string, int>>();
 
-        // Проверяем, истекло ли время отката
-        return _commandCooldowns[userId][commandName] <= DateTime.Now;
+        // Считываем лимиты из DonatorRoles
+        foreach (var kvp in config.DonatorRoles)
+        {
+            var roleName = kvp.Key;
+            var donatorRole = kvp.Value;
+
+            _usageLimits[roleName] = new Dictionary<string, int>();
+            // Для каждой команды, прописанной в CommandLimits, запоминаем лимит
+            foreach (var commandLimit in donatorRole.CommandLimits)
+            {
+                _usageLimits[roleName][commandLimit.Key] = commandLimit.Value;
+            }
+        }
     }
 
-    /// <summary>
-    /// Регистрирует использование команды пользователем и устанавливает время отката.
-    /// </summary>
-    /// <param name="userId">ID пользователя.</param>
-    /// <param name="commandName">Имя команды.</param>
-    /// <param name="cooldownSeconds">Длительность отката в секундах.</param>
-    public void RegisterCommandUsage(string userId, string commandName, int cooldownSeconds = 30)
+    public bool CanExecuteCommand(string userId, string role, string command)
     {
-        // Если у пользователя еще нет записей команд, создаем новый словарь
-        if (!_commandCooldowns.ContainsKey(userId))
-            _commandCooldowns[userId] = new Dictionary<string, DateTime>();
+        // Если в лимитах такой роли вообще нет нужной команды — значит, нельзя
+        if (!_usageLimits.ContainsKey(role) || !_usageLimits[role].ContainsKey(command))
+            return false;
 
-        // Устанавливаем время отката для указанной команды
-        _commandCooldowns[userId][commandName] = DateTime.Now.AddSeconds(cooldownSeconds);
+        if (!_commandUsages.ContainsKey(userId))
+            _commandUsages[userId] = new Dictionary<string, int>();
+
+        if (!_commandUsages[userId].ContainsKey(command))
+            _commandUsages[userId][command] = 0;
+
+        // Сравниваем текущее число использований с максимально допустимым
+        return _commandUsages[userId][command] < _usageLimits[role][command];
+    }
+
+    public void RegisterCommandUsage(string userId, string role, string command)
+    {
+        if (!_commandUsages.ContainsKey(userId))
+            _commandUsages[userId] = new Dictionary<string, int>();
+
+        if (!_commandUsages[userId].ContainsKey(command))
+            _commandUsages[userId][command] = 0;
+
+        _commandUsages[userId][command]++;
+    }
+
+    public void ResetCooldowns()
+    {
+        // Сбрасываем все счётчики использований в начале (или конце) каждого раунда
+        _commandUsages.Clear();
     }
 }
