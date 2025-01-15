@@ -1,2 +1,2 @@
-# Ultimate_Donation
+Not done yet
 Donation plugin for SCP:SL
