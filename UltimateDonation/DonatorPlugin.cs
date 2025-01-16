@@ -17,7 +17,7 @@ public class DonatorPlugin : Plugin<Config>
 
     public override string Name => "UltimateDonation";
     public override string Author => "cybercodeveloper";
-    public override Version Version => new Version(10, 0, 0);
+    public override Version Version => new Version(1, 1, 0);
     public override Version RequiredExiledVersion => new Version(7, 0, 0);
     public ITranslation Translation => _translation;
 
