@@ -288,10 +288,37 @@ public class DonatorRole
 /// <summary>
 /// One player's donor record: Nickname (for config readability), SteamId, assigned role, expiry date.
 /// </summary>
+
 public class PlayerDonation
 {
-    public string Nickname { get; set; } // for reference in config
+    /// <summary>
+    /// Отображаемый в конфиге ник (просто справочная информация).
+    /// </summary>
+    public string Nickname { get; set; }
+
+    /// <summary>
+    /// Стим-айди игрока (без суффикса "@steam").
+    /// </summary>
     public string SteamId { get; set; }
+
+    /// <summary>
+    /// Ключ роли (например, "keter", "euclid" и т.д.).
+    /// </summary>
     public string Role { get; set; }
+
+    /// <summary>
+    /// Дата истечения доната. Если текущая дата превысила ExpiryDate, донат считается истёкшим.
+    /// </summary>
     public DateTime ExpiryDate { get; set; }
+
+    /// <summary>
+    /// Индивидуальная заморозка доната. Если true, то донорские права отключены.
+    /// </summary>
+    public bool IsFrozen { get; set; } = false;
+
+    /// <summary>
+    /// Время начала последней заморозки. Если донат не заморожен, null.
+    /// При разморозке мы компенсируем (ExpiryDate += текущееВремя - FreezeStartedAt).
+    /// </summary>
+    public DateTime? FreezeStartedAt { get; set; } = null;
 }
