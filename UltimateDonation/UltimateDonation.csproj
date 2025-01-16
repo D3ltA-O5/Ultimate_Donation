@@ -109,6 +109,7 @@
     <Reference Include="SemanticVersioning">
       <HintPath>..\..\..\..\..\..\Z_Разработка\библиотеки\SemanticVersioning.dll</HintPath>
     </Reference>
+    <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.Memory, Version=4.0.1.2, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>packages\System.Memory.4.5.5\lib\net461\System.Memory.dll</HintPath>
     </Reference>
@@ -131,7 +132,6 @@
     <Compile Include="CheckLimitsCommand.cs" />
     <Compile Include="Config.cs" />
     <Compile Include="CooldownManager.cs" />
-    <Compile Include="DiscordManager.cs" />
     <Compile Include="DonatorCommand.cs" />
     <Compile Include="EventHandler.cs" />
     <Compile Include="GiveItemCommand.cs" />

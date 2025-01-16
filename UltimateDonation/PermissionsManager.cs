@@ -1,15 +1,18 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using YamlDotNet.Serialization;
+using Exiled.API.Features;
 
 public class PermissionsManager
 {
     private readonly string _filePath;
     private Dictionary<string, object> _permissionsData;
+    private readonly DonatorPlugin _plugin;
 
-    public PermissionsManager(string filePath)
+    public PermissionsManager(string filePath, DonatorPlugin plugin)
     {
         _filePath = filePath;
+        _plugin = plugin;
         LoadPermissions();
     }
 
@@ -18,69 +21,76 @@ public class PermissionsManager
         if (!File.Exists(_filePath))
         {
             _permissionsData = new Dictionary<string, object>();
+            _plugin.LogDebug($"[PermissionsManager] File {_filePath} not found. Will create on save.");
             return;
         }
 
         var yaml = File.ReadAllText(_filePath);
         var deserializer = new DeserializerBuilder().Build();
-        _permissionsData = deserializer.Deserialize<Dictionary<string, object>>(yaml) ?? new Dictionary<string, object>();
+        _permissionsData = deserializer.Deserialize<Dictionary<string, object>>(yaml)
+                           ?? new Dictionary<string, object>();
+
+        _plugin.LogDebug($"[PermissionsManager] Loaded {_filePath}, top-level keys={_permissionsData.Count}.");
     }
 
     public void SavePermissions()
     {
         var serializer = new SerializerBuilder().Build();
         File.WriteAllText(_filePath, serializer.Serialize(_permissionsData));
+        _plugin.LogDebug($"[PermissionsManager] Saved file {_filePath}.");
     }
 
+    // Прописываем роли и их permissions в отдельные ключи, чтобы не путаться с EXILED.Permissions
     public void UpdateRolesAndPermissions(Dictionary<string, DonatorRole> donatorRoles)
     {
-        // Секция "Roles" в permissions.yml
-        if (!_permissionsData.ContainsKey("Roles"))
-            _permissionsData["Roles"] = new List<string>();
+        _permissionsData["DonatorRolesMeta"] = new List<string>();
+        var rolesSection = (List<string>)_permissionsData["DonatorRolesMeta"];
 
-        var rolesSection = (List<string>)_permissionsData["Roles"];
         rolesSection.Clear();
         rolesSection.AddRange(donatorRoles.Keys);
 
-        // Секция "permissions"
-        if (!_permissionsData.ContainsKey("permissions"))
-            _permissionsData["permissions"] = new Dictionary<string, object>();
+        _permissionsData["DonatorPermsMap"] = new Dictionary<string, object>();
+        var permsMap = (Dictionary<string, object>)_permissionsData["DonatorPermsMap"];
+        permsMap.Clear();
 
-        var permissionsSection = (Dictionary<string, object>)_permissionsData["permissions"];
-        permissionsSection.Clear();
-
-        // Для каждой команды (permission) складываем список ролей, у которых она есть
-        foreach (var role in donatorRoles)
+        foreach (var kvp in donatorRoles)
         {
-            foreach (var permission in role.Value.Permissions)
-            {
-                if (!permissionsSection.ContainsKey(permission))
-                    permissionsSection[permission] = new List<string>();
+            var roleName = kvp.Key;
+            var roleData = kvp.Value;
 
-                var rolesWithPermission = (List<string>)permissionsSection[permission];
-                if (!rolesWithPermission.Contains(role.Key))
-                    rolesWithPermission.Add(role.Key);
+            // Проходим по всем permissions
+            if (roleData.permissions == null)
+                continue;
+
+            foreach (var perm in roleData.permissions)
+            {
+                if (!permsMap.ContainsKey(perm))
+                    permsMap[perm] = new List<string>();
+
+                var rolesWithPerm = (List<string>)permsMap[perm];
+                if (!rolesWithPerm.Contains(roleName))
+                    rolesWithPerm.Add(roleName);
             }
         }
 
+        _plugin.LogDebug($"[PermissionsManager] Updated DonatorRolesMeta & DonatorPermsMap with {donatorRoles.Count} roles.");
         SavePermissions();
     }
 
+    // Прописываем user: SteamId@steam -> Role
     public void UpdateMembers(Dictionary<string, PlayerDonation> playerDonations)
     {
-        // Секция "user"
-        if (!_permissionsData.ContainsKey("user"))
-            _permissionsData["user"] = new Dictionary<string, object>();
-
+        _permissionsData["user"] = new Dictionary<string, object>();
         var membersSection = (Dictionary<string, object>)_permissionsData["user"];
         membersSection.Clear();
 
-        // Привязываем каждого донатёра к его роли
         foreach (var donation in playerDonations.Values)
         {
-            membersSection[$"{donation.SteamId}@steam"] = donation.Role;
+            var key = $"{donation.steam_id}@steam";
+            membersSection[key] = donation.role;
         }
 
+        _plugin.LogDebug($"[PermissionsManager] Updated user section. {playerDonations.Count} donors recorded.");
         SavePermissions();
     }
 }

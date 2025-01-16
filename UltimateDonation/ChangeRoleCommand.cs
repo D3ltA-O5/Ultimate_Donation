@@ -1,116 +1,106 @@
 ﻿using CommandSystem;
-using Exiled.API.Features;
-using PlayerRoles;
 using RemoteAdmin;
+using Exiled.API.Features;
 using System;
+using PlayerRoles;
 
 [CommandHandler(typeof(ClientCommandHandler))]
-// Либо RemoteAdminCommandHandler, если хотите чтобы вводить через RA,
-// но, судя по задаче, это должна быть клиентская команда донатёра.
 public class ChangeRoleCommand : ICommand
 {
-    public string Command => "changerole";
-    public string[] Aliases => new[] { "cr" };
-    public string Description => "Позволяет донатёру сменить себе роль (класс SCP, охранника и т.п.), учитывая лимиты.";
-
     private readonly RoleManager _roleManager;
     private readonly CooldownManager _cooldownManager;
     private readonly Config _config;
 
-    public ChangeRoleCommand(RoleManager roleManager, CooldownManager cooldownManager, Config config)
+    public ChangeRoleCommand()
     {
-        _roleManager = roleManager;
-        _cooldownManager = cooldownManager;
-        _config = config;
+        var plugin = DonatorPlugin.Instance;
+        if (plugin != null)
+        {
+            _roleManager = plugin.RoleManager;
+            _cooldownManager = plugin.CooldownManager;
+            _config = plugin.Config;
+        }
     }
+
+    public string Command => "changerole";
+    public string[] Aliases => new[] { "cr" };
+    public string Description => "Allows a donor to change their own role.";
 
     public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
     {
-        // Проверим, что команду выполняет именно игрок (не консоль и не сервер)
+        DonatorPlugin.Instance?.LogDebug($"[ChangeRoleCommand] Executing changerole, args={string.Join(" ", arguments)}");
+
         if (!(sender is PlayerCommandSender playerSender))
         {
-            response = "Команду может выполнить только живой игрок.";
+            response = "This command can only be used by a player.";
             return false;
         }
 
         var player = Player.Get(playerSender.ReferenceHub);
         if (player == null)
         {
-            response = "Не удалось найти вашего игрока в игре.";
+            response = "Failed to find the player object.";
             return false;
         }
 
-        // Проверяем, донатёр ли
         if (!_roleManager.IsDonator(player.UserId))
         {
-            response = "У вас нет донат-прав для смены роли.";
+            response = "You are not a donor.";
             return false;
         }
 
-        // Проверяем, есть ли вообще разрешение на смену роли в списке
         var roleName = _roleManager.GetDonatorRole(player.UserId);
-        if (!_config.DonatorRoles.TryGetValue(roleName, out var donatorRole))
+        var rolesDict = _config.UltimateDonation.donator_roles;
+        if (!rolesDict.TryGetValue(roleName, out var donatorRole))
         {
-            response = "Ваша донат-роль не найдена в конфиге, обратитесь к администратору.";
+            response = "Your donor role is missing in config.";
             return false;
         }
 
-        // Точно ли команда "changerole" есть у этого донатера
-        if (!donatorRole.Permissions.Contains("changerole"))
+        // Проверяем, есть ли команда "changerole" в permissions
+        if (donatorRole.permissions == null || !donatorRole.permissions.Contains("changerole"))
         {
-            response = "В вашей донат-роле нет разрешения на смену роли.";
+            response = "You do not have permission to change your role.";
             return false;
         }
 
-        // Проверим лимит по CooldownManager
+        // Проверка лимита
         if (!_cooldownManager.CanExecuteCommand(player.UserId, roleName, "changerole"))
         {
-            response = "Вы исчерпали лимит на смену роли в этом раунде.";
+            response = "You have reached the usage limit for changing roles this round.";
             return false;
         }
 
-        // Должен быть хотя бы 1 аргумент — на какую роль меняемся
         if (arguments.Count < 1)
         {
-            response = "Использование: .changerole <роль/класс (число или название)>";
+            response = "Usage: .changerole <RoleTypeId or name>";
             return false;
         }
 
         var targetRoleArg = arguments.At(0);
-
-        // Здесь уже ваша логика смены роли. Можно воспользоваться Exiled.API.Features.Player.SetRole(...)
-        // Например, отправим игрока за класс D (RoleTypeId.ClassD), если "d" — так далее.
-        // Это псевдопример, адаптируйте под свой список.
-
         var newRole = ParseRole(targetRoleArg);
         if (newRole == RoleTypeId.None)
         {
-            response = $"Неизвестная роль: {targetRoleArg}";
+            response = $"Unknown role: {targetRoleArg}";
             return false;
         }
 
-        // Применяем смену
         player.Role.Set(newRole);
-
-        // Регистрируем использование команды
         _cooldownManager.RegisterCommandUsage(player.UserId, roleName, "changerole");
 
-        response = $"Вы успешно сменили свою роль на {newRole}.";
+        response = $"You changed your role to {newRole}.";
         return true;
     }
 
-    // Пример вспомогательного метода разбора роли
     private RoleTypeId ParseRole(string arg)
     {
-        // Попробуем распарсить как число
-        if (int.TryParse(arg, out int roleNumber))
+        if (int.TryParse(arg, out int intRole))
         {
-            if (Enum.IsDefined(typeof(RoleTypeId), roleNumber))
-                return (RoleTypeId)roleNumber;
+            if (Enum.IsDefined(typeof(RoleTypeId), intRole))
+                return (RoleTypeId)intRole;
         }
         else
         {
-            // Или как строку
             foreach (RoleTypeId r in Enum.GetValues(typeof(RoleTypeId)))
             {
                 if (r.ToString().Equals(arg, StringComparison.OrdinalIgnoreCase))

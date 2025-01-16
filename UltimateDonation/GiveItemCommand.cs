@@ -1,7 +1,7 @@
 ﻿using CommandSystem;
+using RemoteAdmin;
 using Exiled.API.Features;
 using System;
-using RemoteAdmin;
 using InventorySystem.Items;
 
 [CommandHandler(typeof(ClientCommandHandler))]
@@ -11,81 +11,81 @@ public class GiveItemCommand : ICommand
     private readonly CooldownManager _cooldownManager;
     private readonly Config _config;
 
-    public GiveItemCommand(RoleManager roleManager, CooldownManager cooldownManager, Config config)
+    public GiveItemCommand()
     {
-        _roleManager = roleManager;
-        _cooldownManager = cooldownManager;
-        _config = config;
+        var plugin = DonatorPlugin.Instance;
+        if (plugin != null)
+        {
+            _roleManager = plugin.RoleManager;
+            _cooldownManager = plugin.CooldownManager;
+            _config = plugin.Config;
+        }
     }
 
     public string Command => "giveitem";
     public string[] Aliases => new[] { "gi" };
-    public string Description => "Выдать предмет донатёру (только себе, если так задумано).";
+    public string Description => "Allows a donor to give themselves an item (limited usage).";
 
     public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
     {
-        if (!(sender is PlayerCommandSender playerSender))
+        DonatorPlugin.Instance?.LogDebug($"[GiveItemCommand] Executing giveitem, args={string.Join(" ", arguments)}");
+
+        if (!(sender is PlayerCommandSender ps))
         {
-            response = "Команду может использовать только игрок.";
+            response = "This command can only be used by a player.";
             return false;
         }
 
-        var player = Player.Get(playerSender.ReferenceHub);
+        var player = Player.Get(ps.ReferenceHub);
         if (player == null)
         {
-            response = "Не удалось найти игрока.";
+            response = "Failed to find the player object.";
             return false;
         }
 
         if (!_roleManager.IsDonator(player.UserId))
         {
-            response = "У вас нет донат-прав для выдачи предметов.";
+            response = "You are not a donor.";
             return false;
         }
 
         var roleName = _roleManager.GetDonatorRole(player.UserId);
-        if (!_config.DonatorRoles.TryGetValue(roleName, out var donatorRole))
+        var rolesDict = _config.UltimateDonation.donator_roles;
+        if (!rolesDict.TryGetValue(roleName, out var donatorRole))
         {
-            response = "Ваша донат-роль не найдена в конфиге.";
+            response = "Your donor role is missing in config.";
             return false;
         }
 
-        // Проверяем, есть ли разрешение на giveitem
-        if (!donatorRole.Permissions.Contains("giveitem"))
+        if (donatorRole.permissions == null || !donatorRole.permissions.Contains("giveitem"))
         {
-            response = "В вашей донат-роле нет разрешения на выдачу предметов.";
+            response = "You do not have permission to give items.";
             return false;
         }
 
-        // Проверим лимит на usage
         if (!_cooldownManager.CanExecuteCommand(player.UserId, roleName, "giveitem"))
         {
-            response = "Вы исчерпали лимит на выдачу предметов в этом раунде.";
+            response = "You have reached the usage limit for item giving this round.";
             return false;
         }
 
-        // Для выдачи **себе** достаточно 1 аргумента: что за предмет
         if (arguments.Count < 1)
         {
-            response = "Использование: .giveitem <ItemType>";
+            response = "Usage: .giveitem <ItemType>";
             return false;
         }
 
         var itemTypeStr = arguments.At(0);
-
         if (!Enum.TryParse(itemTypeStr, true, out ItemType parsedItem))
         {
-            response = $"Неизвестный ItemType: {itemTypeStr}";
+            response = $"Unknown ItemType: {itemTypeStr}";
             return false;
         }
 
-        // Выдаём предмет
         player.AddItem(parsedItem);
-
-        // Регистрируем использование
         _cooldownManager.RegisterCommandUsage(player.UserId, roleName, "giveitem");
 
-        response = $"Вы выдали себе предмет {parsedItem}.";
+        response = $"You gave yourself item: {parsedItem}.";
         return true;
     }
 }

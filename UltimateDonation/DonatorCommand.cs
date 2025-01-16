@@ -1,8 +1,6 @@
 ﻿using CommandSystem;
 using RemoteAdmin;
 using System;
-using Exiled.API.Features;
-using PluginAPI.Roles;
 
 [CommandHandler(typeof(RemoteAdminCommandHandler))]
 public class DonatorCommand : ICommand
@@ -11,88 +9,100 @@ public class DonatorCommand : ICommand
     private readonly CooldownManager _cooldownManager;
     private readonly Config _config;
 
-    public DonatorCommand(RoleManager roleManager, CooldownManager cooldownManager, Config config)
+    public DonatorCommand()
     {
-        _roleManager = roleManager ?? throw new ArgumentNullException(nameof(roleManager));
-        _cooldownManager = cooldownManager ?? throw new ArgumentNullException(nameof(cooldownManager));
-        _config = config ?? throw new ArgumentNullException(nameof(config));
+        var plugin = DonatorPlugin.Instance;
+        if (plugin != null)
+        {
+            _roleManager = plugin.RoleManager;
+            _cooldownManager = plugin.CooldownManager;
+            _config = plugin.Config;
+        }
     }
 
     public string Command => "donator";
     public string[] Aliases => new[] { "don" };
-    public string Description => "Управление донатными привилегиями (для админов через RA).";
+    public string Description => "Manage donor privileges (via RA).";
 
     public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
     {
-        // Например, RA-админ может прописать: donator addrole <SteamID> <RoleName> <Days>
-        // или donator removerole <SteamID>
-        // или donator checklimits <SteamID>
-        // Для упрощения просто покажем мини-диспетчер:
+        DonatorPlugin.Instance?.LogDebug($"[DonatorCommand] Executing 'donator', args={string.Join(" ", arguments)}");
 
         if (arguments.Count == 0)
         {
-            response = "Использование: donator <addrole|removerole|checklimits> ...";
+            response = "Usage: donator <addrole|removerole|checklimits> ...";
             return false;
         }
 
-        var subCmd = arguments.At(0).ToLower();
+        var subCmd = arguments.At(0).ToLowerInvariant();
         switch (subCmd)
         {
             case "addrole":
-                // Можно переиспользовать AddRoleCommand напрямую, либо просто скопировать логику
-                // Ниже — короткая версия
                 if (arguments.Count < 4)
                 {
-                    response = "Использование: donator addrole <SteamID> <RoleName> <Days>";
+                    response = "Usage: donator addrole <SteamID> <RoleName> <Days>";
                     return false;
                 }
-                var steamId = arguments.At(1);
-                var roleName = arguments.At(2);
-                if (!int.TryParse(arguments.At(3), out var days))
                 {
-                    response = "Days должно быть числом.";
-                    return false;
+                    var steamId = arguments.At(1);
+                    var roleName = arguments.At(2);
+                    if (!int.TryParse(arguments.At(3), out var days))
+                    {
+                        response = "Days must be an integer.";
+                        return false;
+                    }
+                    if (!_config.UltimateDonation.donator_roles.ContainsKey(roleName))
+                    {
+                        response = $"Role {roleName} not found in config.";
+                        return false;
+                    }
+                    _roleManager.AddDonation(steamId, roleName, days);
+                    response = $"Player {steamId} was given donor role {roleName} for {days} days.";
+                    return true;
                 }
-                if (!_config.DonatorRoles.ContainsKey(roleName))
-                {
-                    response = $"Роль {roleName} не найдена в конфиге.";
-                    return false;
-                }
-                _roleManager.AddDonation(steamId, roleName, days);
-                response = $"Игроку {steamId} добавлена роль {roleName} на {days} дней.";
-                return true;
 
             case "removerole":
                 if (arguments.Count < 2)
                 {
-                    response = "Использование: donator removerole <SteamID>";
+                    response = "Usage: donator removerole <SteamID>";
                     return false;
                 }
-                steamId = arguments.At(1);
-                _roleManager.RemoveDonation(steamId);
-                response = $"С {steamId} снята донат-роль.";
-                return true;
+                {
+                    var steamId = arguments.At(1);
+                    _roleManager.RemoveDonation(steamId);
+                    response = $"Donor role removed from {steamId}.";
+                    return true;
+                }
 
             case "checklimits":
                 if (arguments.Count < 2)
                 {
-                    response = "Использование: donator checklimits <SteamID>";
+                    response = "Usage: donator checklimits <SteamID>";
                     return false;
                 }
-                steamId = arguments.At(1);
-                if (!_roleManager.IsDonator(steamId))
                 {
-                    response = "У игрока нет активной донат-роли.";
-                    return false;
+                    var steamId = arguments.At(1);
+                    if (!_roleManager.IsDonator(steamId))
+                    {
+                        response = "Player is not an active donor.";
+                        return false;
+                    }
+                    var roleKey = _roleManager.GetDonatorRole(steamId);
+                    if (!_config.UltimateDonation.donator_roles.TryGetValue(roleKey, out var roleData))
+                    {
+                        response = $"Could not find donor role '{roleKey}' in config.";
+                        return false;
+                    }
+
+                    response = $"Donor info for player {steamId}, role='{roleKey}':\n" +
+                               $"- role_change_limit: {roleData.role_change_limit}\n" +
+                               $"- item_give_limit: {roleData.item_give_limit}\n" +
+                               "command_limits: " + string.Join(", ", roleData.command_limits);
+                    return true;
                 }
-                var r = _roleManager.GetDonatorRole(steamId);
-                response = _config.DonatorRoles.ContainsKey(r)
-                    ? $"Лимиты для роли {r}: смена роли {_config.DonatorRoles[r].RoleChangeLimit} раз, выдача предметов {_config.DonatorRoles[r].ItemGiveLimit} раз, и т. п."
-                    : $"Не найдена роль {r} в конфиге.";
-                return true;
 
             default:
-                response = "Неизвестная субкоманда.";
+                response = "Unknown subcommand. Use addrole/removerole/checklimits.";
                 return false;
         }
     }
