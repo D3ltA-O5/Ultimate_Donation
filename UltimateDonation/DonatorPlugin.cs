@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using Exiled.API.Features;
+using Exiled.API.Interfaces; 
 using Exiled.Events.EventArgs.Server;
 using Exiled.Events.EventArgs.Player;
 using YamlDotNet.Serialization;
@@ -12,16 +13,19 @@ public class DonatorPlugin : Plugin<Config>
 
     private RoleManager _roleManager;
     private CooldownManager _cooldownManager;
-    private TranslationData _translationData; // optional
+    private Translation _translation; 
 
     public override string Name => "UltimateDonation";
     public override string Author => "cybercodeveloper";
     public override Version Version => new Version(10, 0, 0);
     public override Version RequiredExiledVersion => new Version(7, 0, 0);
+    public ITranslation Translation => _translation;
 
     public RoleManager RoleManager => _roleManager;
     public CooldownManager CooldownManager => _cooldownManager;
-    public TranslationData TranslationData => _translationData;
+
+    public DonationsManager DonationsManager { get; private set; }
+
 
     public override void OnEnabled()
     {
@@ -36,15 +40,13 @@ public class DonatorPlugin : Plugin<Config>
             return;
         }
 
-        // create or load default config, translations
-        CreateOrLoadDefaultConfig();
         CreateOrLoadTranslationsFile();
 
-        // init
+        DonationsManager = new DonationsManager(this);
+
         _roleManager = new RoleManager(Config, this);
         _cooldownManager = new CooldownManager(Config, this);
 
-        // subscribe events
         Exiled.Events.Handlers.Player.Verified += OnPlayerVerified;
         Exiled.Events.Handlers.Server.RoundEnded += OnRoundEnded;
 
@@ -70,8 +72,8 @@ public class DonatorPlugin : Plugin<Config>
         var sid = DonatorUtils.CleanSteamId(ev.Player.UserId);
         if (_roleManager.IsDonator(sid))
         {
-            var roleK = _roleManager.GetDonatorRole(sid);
-            if (Config.DonatorRoles.TryGetValue(roleK, out var dRol))
+            var roleKey = _roleManager.GetDonatorRole(sid);
+            if (Config.DonatorRoles.TryGetValue(roleKey, out var dRol))
             {
                 ev.Player.RankName = dRol.RankName;
                 ev.Player.RankColor = dRol.RankColor;
@@ -91,172 +93,6 @@ public class DonatorPlugin : Plugin<Config>
         if (Config.Debug) Log.Debug(msg);
     }
 
-    private void CreateOrLoadDefaultConfig()
-    {
-        string path = System.IO.Path.Combine(Paths.Configs, "UltimateDonation.yaml");
-        if (!File.Exists(path))
-        {
-            // For simplicity, we just write a large YAML text. 
-            // We'll place the 'GlobalCommandLimits' block here so that there's no duplication in each DonatorRole.
-            var defaultYaml = @"is_enabled: true
-debug: false
-
-donator_roles:
-  safe:
-    name: ""Safe""
-    badge_color: ""green""
-    permissions:
-      - ""changerole""
-      - ""giveitem""
-    rank_name: ""SAFE""
-    rank_color: ""green""
-    customprefixenabled: false
-
-  euclid:
-    name: ""Euclid""
-    badge_color: ""orange""
-    permissions:
-      - ""changerole""
-      - ""giveitem""
-    rank_name: ""EUCLID""
-    rank_color: ""orange""
-    customprefixenabled: false
-
-  keter:
-    name: ""Keter""
-    badge_color: ""red""
-    permissions:
-      - ""changerole""
-      - ""giveitem""
-    rank_name: ""KETER""
-    rank_color: ""red""
-    customprefixenabled: true
-
-player_donations:
-  - nickname: ""DonorOne""
-    steam_id: ""76561199000000001""
-    role: ""safe""
-    expiry_date: ""2030-12-31T00:00:00""
-  - nickname: ""DonorTwo""
-    steam_id: ""76561199000000002""
-    role: ""safe""
-    expiry_date: ""2030-12-31T00:00:00""
-  - nickname: ""DonorThree""
-    steam_id: ""76561199000000003""
-    role: ""euclid""
-    expiry_date: ""2030-12-31T00:00:00""
-  - nickname: ""DonorFour""
-    steam_id: ""76561199000000004""
-    role: ""euclid""
-    expiry_date: ""2030-12-31T00:00:00""
-  - nickname: ""DonorFive""
-    steam_id: ""76561199000000005""
-    role: ""keter""
-    expiry_date: ""2030-12-31T00:00:00""
-  - nickname: ""DonorSix""
-    steam_id: ""76561199000000006""
-    role: ""keter""
-    expiry_date: ""2030-12-31T00:00:00""
-
-blacklisted_roles:
-  - ""scp3114""
-
-blacklisted_items:
-  - ""MicroHID""
-
-scp_change_time_limit: 120
-custom_prefix_global_enable: false
-
-global_command_limits:
-  safe:
-    changerole: 2
-    giveitem: 2
-  euclid:
-    changerole: 3
-    giveitem: 4
-  keter:
-    changerole: 5
-    giveitem: 5
-
-role_aliases:
-  ""173"": ""Scp173""
-  ""statue"": ""Scp173""
-  ""096"": ""Scp096""
-  ""shyguy"": ""Scp096""
-  ""079"": ""Scp079""
-  ""computer"": ""Scp079""
-  ""106"": ""Scp106""
-  ""larry"": ""Scp106""
-  ""049"": ""Scp049""
-  ""doctor"": ""Scp049""
-  ""0492"": ""Scp0492""
-  ""zombie"": ""Scp0492""
-  ""939"": ""Scp939""
-  ""dog"": ""Scp939""
-  ""dclass"": ""ClassD""
-  ""d-boy"": ""ClassD""
-  ""scientist"": ""Scientist""
-  ""facilityguard"": ""FacilityGuard""
-  ""guard"": ""FacilityGuard""
-  ""ntf"": ""MTFPrivate""
-  ""mtf"": ""MTFPrivate""
-  ""chaos"": ""ChaosConscript""
-  ""ci"": ""ChaosConscript""
-  ""tutorial"": ""Tutorial""
-  ""spectator"": ""Spectator""
-
-item_aliases:
-  ""cardjanitor"": ""KeycardJanitor""
-  ""cardscientist"": ""KeycardScientist""
-  ""keycard"": ""KeycardScientist""
-  ""cardguard"": ""KeycardGuard""
-  ""cardmtf"": ""KeycardNTFOfficer""
-  ""ntfofficer"": ""KeycardNTFOfficer""
-  ""cardcommander"": ""KeycardNTFCommander""
-  ""admincard"": ""KeycardFacilityManager""
-  ""pistol"": ""GunCOM15""
-  ""com15"": ""GunCOM15""
-  ""e11"": ""GunE11SR""
-  ""rifle"": ""GunE11SR""
-  ""shotgun"": ""GunShotgun""
-  ""pumpgun"": ""GunShotgun""
-  ""mp7"": ""GunMP7""
-  ""smg"": ""GunMP7""
-  ""ak"": ""GunAK""
-  ""logicer"": ""GunLogicer""
-  ""flash"": ""GrenadeFlash""
-  ""hegrenade"": ""GrenadeHE""
-  ""vest"": ""ArmorCombat""
-  ""heavyvest"": ""ArmorHeavy""
-  ""hazmat"": ""ArmorHazmat""
-  ""medkit"": ""Medkit""
-  ""painkillers"": ""Painkillers""
-  ""adrenaline"": ""Adrenaline""
-  ""scp500"": ""SCP500""
-  ""scp207"": ""SCP207""
-  ""radio"": ""Radio""
-  ""micro"": ""MicroHID""
-  ""disarmer"": ""Disarmer""
-  ""camera"": ""WeaponManagerTablet""
-
-forbidden_prefix_substrings:
-  - ""admin""
-  - ""administrator""
-  - ""moderator""
-  - ""fuck""
-  - ""shit""
-  - ""nazi""
-  - ""owner""
-";
-            File.WriteAllText(path, defaultYaml);
-            Log.Info($"[UltimateDonation] Created default config file: {path}");
-        }
-        else
-        {
-            Log.Info($"[UltimateDonation] Found existing config file: {path}");
-        }
-    }
-
     private void CreateOrLoadTranslationsFile()
     {
         try
@@ -265,56 +101,131 @@ forbidden_prefix_substrings:
             if (!File.Exists(path))
             {
                 var defText = @"
-# donat_translations.yml
-# English translations for UltimateDonation plugin.
+################################################################################
+# Donator translations (single-line, single-quoted).                           #
+# Используем \n в строке, чтобы при выводе текста была разметка (переносы).
+################################################################################
 
-help_donator_command: >
-  Donator plugin help (English).
-  Subcommands:
-    addrole <SteamID> <RoleName> <Days> - Assign a donor role
-    removerole <SteamID> - Remove donor role
-    checklimits <SteamID> - Check usage limits
-    listroles - Shows available donor roles
-    listitems - Shows item aliases
-    prefix <SteamID> <prefix> <color> - Set custom prefix
-    help - Show this help
+help_donator_command: 'Donator plugin help (English). Subcommands: addrole <SteamID> <RoleName> <Days>, removerole <SteamID>, freezeall <true|false>, freezeplayer <SteamID> <true|false>, infoplayer <SteamID>, listroleplayers <RoleKey>, listalldonations.'
+help_changerole_usage: 'Usage: .changerole <RoleAlias>. E.g. .changerole 173'
+help_changerole_not_donor: 'You are not a donor.'
+help_changerole_round_not_started: 'The round has not started yet.'
+help_changerole_no_perm: 'You do not have permission to change roles.'
+help_changerole_limit: 'You reached your changerole limit this round.'
+help_changerole_blacklisted: 'That role is blacklisted.'
+help_changerole_scp_timed_out: 'Too late to become SCP.'
+help_changerole_scp_already_exists: 'That SCP already exists.'
 
-help_changerole_usage: ""Usage: .changerole <RoleAlias or ID>. E.g. .changerole 173""
-help_changerole_not_donor: ""You are not a donor.""
-help_changerole_round_not_started: ""The round hasn't started yet.""
-help_changerole_no_perm: ""You don't have permission to change roles.""
-help_changerole_limit: ""You reached your changerole limit this round.""
-help_changerole_blacklisted: ""That role is blacklisted.""
-help_changerole_scp_timed_out: ""It's too late to become SCP.""
-help_changerole_scp_already_exists: ""An SCP of that type already exists.""
+help_giveitem_usage: 'Usage: .giveitem <alias or itemtype>. E.g. .giveitem rifle'
+help_giveitem_round_not_started: 'Cannot use .giveitem before the round starts.'
+help_giveitem_not_donor: 'You are not a donor.'
+help_giveitem_no_perm: 'You do not have ''giveitem'' permission.'
+help_giveitem_limit: 'You reached your giveitem limit.'
+help_giveitem_blacklisted: 'That item is blacklisted.'
 
-help_giveitem_usage: ""Usage: .giveitem <alias or itemtype>. E.g. .giveitem rifle""
-help_giveitem_round_not_started: ""Can't give items before the round starts.""
-help_giveitem_not_donor: ""You are not a donor.""
-help_giveitem_no_perm: ""You have no 'giveitem' permission.""
-help_giveitem_limit: ""You reached your giveitem limit.""
-help_giveitem_blacklisted: ""That item is blacklisted.""
+help_prefix_usage: 'Usage: donator prefix <SteamId> <Prefix> <Color>'
+aliases_note: 'You can define role & item aliases in this file below.'
+only_player_can_use_command: 'Only a player can use this command (not console).'
+player_object_not_found: 'Failed to retrieve your player object. Please try again.'
+missing_donor_role_in_config: 'Your donor role is missing in config.'
 
-help_prefix_usage: ""Usage: donator prefix <SteamID> <Prefix> <Color>""
+unknown_role_alias: 'Unknown role alias/id'
+change_role_success: 'You changed your role to {roleName}.'
+cannot_give_item_as_scp: 'You cannot give items while you are an SCP.'
+unknown_item_alias: 'Unknown item alias'
+give_item_success: 'You received {itemType}.'
 
-aliases_note: ""You can define role & item aliases in UltimateDonation.yaml""
+mydon_only_player: 'This command can only be used by players in the client console.'
+mydon_not_donor: 'You are not a donor, or your donation has expired.'
+mydon_role_not_configured: 'Your donor role is not configured correctly. Please contact an administrator.'
+mydon_no_limits_found: 'No global command limits found for your role ''{roleKey}''.'
+mydon_no_commands_tracked: 'No commands available for usage tracking.'
+
+mydon_status_info: |
+  === Your Donation Status ===
+  - Role: {roleName} (Key: {roleKey})
+  - Days Left: {daysLeft}
+  - Permissions: {permissions}
+  - Command Usage This Round: {usageSummary}
+  (Tip: Use '.changerole' or '.giveitem' if allowed by your role.)
+
+donator_only_players: 'This command can only be used by a player in client console.'
+prefix_not_allowed: 'This donor role does not allow custom prefixes.'
+prefix_set_success: 'Custom prefix ''{prefixValue}'' color=''{colorValue}'' set successfully!'
+
+################################################################################
+# Single-line role_aliases and item_aliases
+################################################################################
+
+role_aliases:
+  '173': 'Scp173'
+  'statue': 'Scp173'
+  '096': 'Scp096'
+  'shyguy': 'Scp096'
+  '079': 'Scp079'
+  'computer': 'Scp079'
+  '106': 'Scp106'
+  'larry': 'Scp106'
+  '049': 'Scp049'
+  'doctor': 'Scp049'
+  '0492': 'Scp0492'
+  'zombie': 'Scp0492'
+  '939': 'Scp939'
+  'dog': 'Scp939'
+  'dclass': 'ClassD'
+  'd-boy': 'ClassD'
+  'scientist': 'Scientist'
+  'facilityguard': 'FacilityGuard'
+  'guard': 'FacilityGuard'
+  'ntf': 'MTFPrivate'
+  'mtf': 'MTFPrivate'
+  'chaos': 'ChaosConscript'
+  'ci': 'ChaosConscript'
+  'tutorial': 'Tutorial'
+  'spectator': 'Spectator'
+
+item_aliases:
+  'cardjanitor': 'KeycardJanitor'
+  'cardscientist': 'KeycardScientist'
+  'keycard': 'KeycardScientist'
+  'cardguard': 'KeycardGuard'
+  'cardcommander': 'KeycardNTFCommander'
+  'admincard': 'KeycardFacilityManager'
+  'pistol': 'GunCOM15'
+  'com15': 'GunCOM15'
+  'e11': 'GunE11SR'
+  'rifle': 'GunE11SR'
+  'shotgun': 'GunShotgun'
+  'pumpgun': 'GunShotgun'
+  'mp7': 'GunMP7'
+  'smg': 'GunMP7'
+  'ak': 'GunAK'
+  'logicer': 'GunLogicer'
+  'flash': 'GrenadeFlash'
+  'hegrenade': 'GrenadeHE'
+  'vest': 'ArmorCombat'
+  'heavyvest': 'ArmorHeavy'
+  'hazmat': 'ArmorHazmat'
+  'medkit': 'Medkit'
+  'painkillers': 'Painkillers'
+  'adrenaline': 'Adrenaline'
+  'scp500': 'SCP500'
+  'scp207': 'SCP207'
+  'radio': 'Radio'
+  'micro': 'MicroHID'
 ";
                 File.WriteAllText(path, defText);
-                Log.Info($"[UltimateDonation] Created default translation file: {path}");
-            }
-            else
-            {
-                Log.Info($"[UltimateDonation] Found existing translation file: {path}");
+                Log.Info($"[UltimateDonation] Created default single-line translation file: {path}");
             }
 
             var yaml = File.ReadAllText(path);
             var ds = new DeserializerBuilder().Build();
-            _translationData = ds.Deserialize<TranslationData>(yaml) ?? new TranslationData();
+            _translation = ds.Deserialize<Translation>(yaml) ?? new Translation();
         }
         catch (Exception ex)
         {
             Log.Error($"[UltimateDonation] Failed to load translations: {ex}");
-            _translationData = new TranslationData();
+            _translation = new Translation();
         }
     }
 }

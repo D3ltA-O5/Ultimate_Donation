@@ -1,18 +1,16 @@
 ﻿using CommandSystem;
-using RemoteAdmin; // можно подключить, если нужно
+using RemoteAdmin;
 using Exiled.API.Features;
 using System;
 using System.Linq;
 using UltimateDonation;
 
-[CommandHandler(typeof(RemoteAdminCommandHandler))] // ключ к доступу из RA
+[CommandHandler(typeof(RemoteAdminCommandHandler))] 
 public class DonatorAdminCommand : ICommand
 {
-    // Ссылки на менеджеры (RoleManager, Config, и т.д.)
     private readonly RoleManager _roleManager;
     private readonly Config _config;
 
-    // Название команды, алиасы, описание
     public string Command => "donator";
     public string[] Aliases => new[] { "donadm", "dadm" };
     public string Description => "Admin command to manage donor roles (addrole, removerole, freeze, info, etc.).";
@@ -27,17 +25,15 @@ public class DonatorAdminCommand : ICommand
         }
     }
 
-    // Основная логика
     public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
     {
-        // Проверим, что мы действительно вызываем из RA (не обязательно, но полезно)
+
         if (!(sender is CommandSender))
         {
             response = "You must run this command in RA console.";
             return false;
         }
 
-        // Если нет аргументов — показываем помощь
         if (arguments.Count < 1)
         {
             response = GetHelpText();
@@ -47,12 +43,8 @@ public class DonatorAdminCommand : ICommand
         var subCommand = arguments.At(0).ToLowerInvariant();
         switch (subCommand)
         {
-            // ---------------------
-            // Добавление донат-роли
-            // ---------------------
             case "addrole":
                 {
-                    // donator addrole <steamId> <roleKey> <days>
                     if (arguments.Count < 4)
                     {
                         response = "Usage: donator addrole <SteamID64> <roleKey> <days>";
@@ -60,33 +52,26 @@ public class DonatorAdminCommand : ICommand
                     }
 
                     var steamId = arguments.At(1);
-                    var roleKey = arguments.At(2).ToLowerInvariant(); // например, "keter"
+                    var roleKey = arguments.At(2).ToLowerInvariant();
                     if (!int.TryParse(arguments.At(3), out var days))
                     {
                         response = "Days must be an integer (number of days).";
                         return false;
                     }
 
-                    // Проверка, есть ли роль в конфиге
                     if (!_config.DonatorRoles.ContainsKey(roleKey))
                     {
                         response = $"Role '{roleKey}' not found in config DonatorRoles.";
                         return false;
                     }
 
-                    // Добавляем
                     _roleManager.AddDonation(steamId, roleKey, days);
-
                     response = $"Donator role '{roleKey}' added to {steamId} for {days} days.";
                     return true;
                 }
 
-            // ---------------------
-            // Удаление донат-роли
-            // ---------------------
             case "removerole":
                 {
-                    // donator removerole <steamId>
                     if (arguments.Count < 2)
                     {
                         response = "Usage: donator removerole <SteamID64>";
@@ -99,12 +84,8 @@ public class DonatorAdminCommand : ICommand
                     return true;
                 }
 
-            // ---------------------
-            // Заморозить/разморозить все донаты
-            // ---------------------
             case "freezeall":
                 {
-                    // donator freezeall <true|false>
                     if (arguments.Count < 2)
                     {
                         response = "Usage: donator freezeall <true|false>";
@@ -121,12 +102,8 @@ public class DonatorAdminCommand : ICommand
                     return true;
                 }
 
-            // ---------------------
-            // Заморозить/разморозить донат одного игрока
-            // ---------------------
             case "freezeplayer":
                 {
-                    // donator freezeplayer <steamId> <true|false>
                     if (arguments.Count < 3)
                     {
                         response = "Usage: donator freezeplayer <SteamID64> <true|false>";
@@ -144,7 +121,6 @@ public class DonatorAdminCommand : ICommand
                         return false;
                     }
 
-                    // Вызываем метод, который учитывает компенсацию времени
                     _roleManager.SetDonationFrozen(steamId, freezeValue);
 
                     response = freezeValue
@@ -153,12 +129,8 @@ public class DonatorAdminCommand : ICommand
                     return true;
                 }
 
-            // ---------------------
-            // Получить инфо о донате одного игрока
-            // ---------------------
             case "infoplayer":
                 {
-                    // donator infoplayer <steamId>
                     if (arguments.Count < 2)
                     {
                         response = "Usage: donator infoplayer <SteamID64>";
@@ -186,12 +158,8 @@ public class DonatorAdminCommand : ICommand
                     return true;
                 }
 
-            // ---------------------
-            // Список игроков с конкретной донатной ролью
-            // ---------------------
             case "listroleplayers":
                 {
-                    // donator listroleplayers <roleKey>
                     if (arguments.Count < 2)
                     {
                         response = "Usage: donator listroleplayers <roleKey>";
@@ -214,9 +182,6 @@ public class DonatorAdminCommand : ICommand
                     return true;
                 }
 
-            // ---------------------
-            // Список всех донатов на сервере
-            // ---------------------
             case "listalldonations":
                 {
                     var all = _roleManager.GetAllDonations();
@@ -234,9 +199,6 @@ public class DonatorAdminCommand : ICommand
                     return true;
                 }
 
-            // ---------------------
-            // Помощь
-            // ---------------------
             default:
                 {
                     response = GetHelpText();

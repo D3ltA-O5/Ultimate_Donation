@@ -1,13 +1,13 @@
 ﻿using CommandSystem;
-using RemoteAdmin; // можно подключить, если нужно
+using RemoteAdmin;  
 using Exiled.API.Features;
 using System;
+using System.Linq;
 using UltimateDonation;
 
-[CommandHandler(typeof(ClientCommandHandler))] // <-- ВАЖНО: Команда доступна в клиентской консоли
+[CommandHandler(typeof(ClientCommandHandler))] 
 public class DonatorCommand : ICommand
 {
-    // Ссылки на ваши менеджеры (RoleManager, Config и т.д.)
     private readonly RoleManager _roleManager;
     private readonly Config _config;
 
@@ -27,14 +27,20 @@ public class DonatorCommand : ICommand
 
     public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
     {
-        // Проверим, что вызвал игрок, а не сервер/RA
-        if (!(sender is PlayerCommandSender playerSender))
+
+        var t = DonatorPlugin.Instance?.Translation as Translation;
+        if (t == null)
         {
-            response = "This command can only be used by a player in client console.";
+            response = "Translation not loaded.";
             return false;
         }
 
-        // Если аргументов нет, подскажем помощь
+        if (!(sender is PlayerCommandSender playerSender))
+        {
+            response = t.DonatorOnlyPlayers;
+            return false;
+        }
+
         if (arguments.Count == 0)
         {
             response = "Usage: donator <prefix|help> ...";
@@ -46,63 +52,64 @@ public class DonatorCommand : ICommand
         switch (subcmd)
         {
             case "prefix":
-                // Ожидаем форму: donator prefix <prefixText> <color>
+
                 if (arguments.Count < 3)
                 {
-                    response = "Usage: donator prefix <Prefix> <Color>";
+                    response = t.HelpPrefixUsage;
                     return false;
                 }
 
-                // Проверка, что игрок - донатор, и роль позволяет prefix
                 var player = Player.Get(playerSender.ReferenceHub);
                 if (player == null)
                 {
-                    response = "Failed to find your player object.";
+                    response = t.PlayerObjectNotFound;
                     return false;
                 }
 
                 var sid = DonatorUtils.CleanSteamId(player.UserId);
                 if (!_roleManager.IsDonator(sid))
                 {
-                    response = "You are not a donor.";
+                    response = t.HelpChangeRoleNotDonor;
                     return false;
                 }
+
                 var roleKey = _roleManager.GetDonatorRole(sid);
                 if (!_config.DonatorRoles.TryGetValue(roleKey, out var dRole))
                 {
-                    response = "Donor role not found in config.";
-                    return false;
-                }
-                if (!dRole.CustomPrefixEnabled || !_config.CustomPrefixGlobalEnable)
-                {
-                    response = "This donor role does not allow custom prefixes.";
+                    response = t.MissingDonorRoleInConfig;
                     return false;
                 }
 
-                // Собираем аргументы
+                if (!dRole.CustomPrefixEnabled || !_config.CustomPrefixGlobalEnable)
+                {
+                    response = t.PrefixNotAllowed;
+                    return false;
+                }
+
                 var prefixValue = arguments.At(1);
                 var colorValue = arguments.At(2);
 
-                // Проверяем запрещённые слова (если у вас есть _config.ForbiddenPrefixSubstrings)
-                // Пример:
-                // if (_config.ForbiddenPrefixSubstrings.Any(bad => prefixValue.Contains(bad, StringComparison.OrdinalIgnoreCase)))
-                // {
-                //     response = "Your prefix contains a forbidden word.";
-                //     return false;
-                // }
+                if (_config.ForbiddenPrefixSubstrings.Any(bad =>
+                    prefixValue.IndexOf(bad, StringComparison.OrdinalIgnoreCase) >= 0))
+                {
+                    response = t.PrefixForbiddenWordMessage;
+                    return false;
+                }
 
-                // Устанавливаем
                 player.RankName = prefixValue;
                 player.RankColor = colorValue;
 
-                response = $"Custom prefix '{prefixValue}' color='{colorValue}' set successfully!";
+                response = t.PrefixSetSuccess
+                    .Replace("{prefixValue}", prefixValue)
+                    .Replace("{colorValue}", colorValue);
                 return true;
 
             case "help":
             default:
                 response =
                     "Donator help:\n" +
-                    "- prefix <Prefix> <Color>: Set a custom prefix if your role allows.\n";
+                    "- prefix <Prefix> <Color>: Set a custom prefix if your role allows.\n" +
+                    "- (More subcommands can be added in the future).";
                 return true;
         }
     }

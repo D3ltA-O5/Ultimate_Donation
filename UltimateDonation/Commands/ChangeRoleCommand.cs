@@ -26,103 +26,110 @@ public class ChangeRoleCommand : ICommand
 
     public string Command => "changerole";
     public string[] Aliases => new[] { "cr", "role", "chrole" };
-    public string Description => "Donor command to change your role if allowed (no duplication of command-limits in role).";
+    public string Description => "Donor command to change your role if allowed.";
 
     public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
     {
-        var t = DonatorPlugin.Instance?.TranslationData;
+        var t = DonatorPlugin.Instance?.Translation as Translation;
+        if (t == null)
+        {
+            response = "Translation not loaded.";
+            return false;
+        }
 
         if (!Round.IsStarted)
         {
-            response = t?.HelpChangeRoleRoundNotStarted ?? "The round hasn't started.";
+            response = t.HelpChangeRoleRoundNotStarted;
             return false;
         }
 
         if (!(sender is PlayerCommandSender pcs))
         {
-            response = "Only a player can use this command (not console).";
+            response = t.OnlyPlayerCanUseCommand;
             return false;
         }
 
         var player = Player.Get(pcs.ReferenceHub);
         if (player == null)
         {
-            response = "Failed to find your player object.";
+            response = t.PlayerObjectNotFound;
             return false;
         }
 
         var sid = DonatorUtils.CleanSteamId(player.UserId);
         if (!_roleManager.IsDonator(sid))
         {
-            response = t?.HelpChangeRoleNotDonor ?? "You are not a donor.";
+            response = t.HelpChangeRoleNotDonor;
             return false;
         }
 
         var roleKey = _roleManager.GetDonatorRole(sid);
         if (!_config.DonatorRoles.TryGetValue(roleKey, out var dRol))
         {
-            response = "Your donor role is missing in config.";
+            response = t.MissingDonorRoleInConfig;
             return false;
         }
-        // Must have "changerole" permission
+
         if (!dRol.Permissions.Contains("changerole"))
         {
-            response = t?.HelpChangeRoleNoPerm ?? "You don't have permission to change roles.";
+            response = t.HelpChangeRoleNoPerm;
             return false;
         }
-        // Check usage limit from global
+
         if (!_cooldownManager.CanExecuteCommand(sid, roleKey, "changerole"))
         {
-            response = t?.HelpChangeRoleLimit ?? "You reached the changerole limit this round.";
+            response = t.HelpChangeRoleLimit;
             return false;
         }
 
         if (arguments.Count < 1)
         {
-            var allAliases = string.Join(", ", _config.RoleAliases.Keys);
-            response = $"{(t?.HelpChangeRoleUsage ?? "Usage: .changerole <roleAlias>")}\nPossible aliases: {allAliases}";
+            var allAliases = (t.RoleAliases != null)
+                ? string.Join(", ", t.RoleAliases.Keys)
+                : "No aliases found.";
+            response = $"{t.HelpChangeRoleUsage}\nPossible aliases: {allAliases}";
             return false;
         }
 
         var arg = arguments.At(0).ToLowerInvariant();
-        if (_config.RoleAliases.TryGetValue(arg, out var realRole))
+
+        if (t.RoleAliases.TryGetValue(arg, out var realRole))
             arg = realRole;
 
         var parsedRole = ParseRole(arg);
         if (parsedRole == RoleTypeId.None)
         {
-            var suggestion = string.Join(", ", _config.RoleAliases.Keys);
-            response = $"Unknown role alias/id '{arg}'. Possible aliases: {suggestion}";
+            var suggestion = (t.RoleAliases != null)
+                ? string.Join(", ", t.RoleAliases.Keys)
+                : "No aliases available.";
+            response = $"{t.UnknownRoleAlias} '{arg}'. Possible aliases: {suggestion}";
             return false;
         }
 
-        // blacklist
         if (_roleManager.IsBlacklistedRole(parsedRole.ToString().ToLowerInvariant()))
         {
-            response = t?.HelpChangeRoleBlacklisted ?? "That role is blacklisted.";
+            response = t.HelpChangeRoleBlacklisted;
             return false;
         }
 
-        // if scp => time check, duplication check
         if (parsedRole.ToString().StartsWith("Scp", StringComparison.OrdinalIgnoreCase))
         {
             if (!_roleManager.CanChangeToScpYet())
             {
-                response = t?.HelpChangeRoleScpTimedOut ?? "Too late to become SCP.";
+                response = t.HelpChangeRoleScpTimedOut;
                 return false;
             }
             if (Player.List.Any(pl => pl.Role == parsedRole))
             {
-                response = t?.HelpChangeRoleScpAlreadyExists ?? "That SCP already exists.";
+                response = t.HelpChangeRoleScpAlreadyExists;
                 return false;
             }
         }
 
-        // Set role
         player.Role.Set(parsedRole);
         _cooldownManager.RegisterCommandUsage(sid, roleKey, "changerole");
 
-        response = $"You changed your role to {parsedRole}.";
+        response = t.ChangeRoleSuccess.Replace("{roleName}", parsedRole.ToString());
         return true;
     }
 

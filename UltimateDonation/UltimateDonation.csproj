@@ -127,19 +127,21 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ChangeRoleCommand.cs" />
-    <Compile Include="Config.cs" />
-    <Compile Include="CooldownManager.cs" />
-    <Compile Include="DonatorAdminCommand.cs.cs" />
-    <Compile Include="DonatorCommand.cs" />
+    <Compile Include="Commands\ChangeRoleCommand.cs" />
+    <Compile Include="Configs\Config.cs" />
+    <Compile Include="Managers\CooldownManager.cs" />
+    <Compile Include="Commands\DonatorAdminCommand.cs.cs" />
+    <Compile Include="Commands\DonatorCommand.cs" />
+    <Compile Include="DonationsData.cs" />
+    <Compile Include="Managers\DonationsManager.cs" />
     <Compile Include="EventHandler.cs" />
-    <Compile Include="GiveItemCommand.cs" />
-    <Compile Include="MyDonCommand.cs" />
+    <Compile Include="Commands\GiveItemCommand.cs" />
+    <Compile Include="Commands\MyDonCommand.cs" />
     <Compile Include="DonatorPlugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="RoleManager.cs" />
+    <Compile Include="Managers\RoleManager.cs" />
     <Compile Include="DonatorUtils.cs" />
-    <Compile Include="TranslationData.cs" />
+    <Compile Include="Configs\Translation.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
