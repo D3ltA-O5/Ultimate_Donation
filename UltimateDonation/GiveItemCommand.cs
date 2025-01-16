@@ -2,7 +2,9 @@
 using RemoteAdmin;
 using Exiled.API.Features;
 using System;
+using System.Linq;
 using InventorySystem.Items;
+using UltimateDonation;
 
 [CommandHandler(typeof(ClientCommandHandler))]
 public class GiveItemCommand : ICommand
@@ -13,79 +15,102 @@ public class GiveItemCommand : ICommand
 
     public GiveItemCommand()
     {
-        var plugin = DonatorPlugin.Instance;
-        if (plugin != null)
+        var pl = DonatorPlugin.Instance;
+        if (pl != null)
         {
-            _roleManager = plugin.RoleManager;
-            _cooldownManager = plugin.CooldownManager;
-            _config = plugin.Config;
+            _roleManager = pl.RoleManager;
+            _cooldownManager = pl.CooldownManager;
+            _config = pl.Config;
         }
     }
 
     public string Command => "giveitem";
-    public string[] Aliases => new[] { "gi" };
-    public string Description => "Allows a donor to give themselves an item (limited usage).";
+    public string[] Aliases => new[] { "gi", "givei", "giveweapon" };
+    public string Description => "Donor command to give yourself an item if you have 'giveitem' permission. Checks global limits from config.";
 
     public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
     {
-        DonatorPlugin.Instance?.LogDebug($"[GiveItemCommand] Executing giveitem, args={string.Join(" ", arguments)}");
+        var t = DonatorPlugin.Instance?.TranslationData;
 
-        if (!(sender is PlayerCommandSender ps))
+        if (!Round.IsStarted)
         {
-            response = "This command can only be used by a player.";
+            response = t?.HelpGiveItemRoundNotStarted ?? "Round not started yet.";
+            return false;
+        }
+        if (!(sender is PlayerCommandSender pcs))
+        {
+            response = "Only a player can use .giveitem.";
             return false;
         }
 
-        var player = Player.Get(ps.ReferenceHub);
+        var player = Player.Get(pcs.ReferenceHub);
         if (player == null)
         {
-            response = "Failed to find the player object.";
+            response = "Failed to find player object.";
+            return false;
+        }
+        var sid = DonatorUtils.CleanSteamId(player.UserId);
+
+        if (!_roleManager.IsDonator(sid))
+        {
+            response = t?.HelpGiveItemNotDonor ?? "You are not a donor.";
             return false;
         }
 
-        if (!_roleManager.IsDonator(player.UserId))
+        // If user is SCP => forbid
+        if (player.Role.Team == PlayerRoles.Team.SCPs)
         {
-            response = "You are not a donor.";
+            response = "You cannot give items to yourself while you are an SCP.";
             return false;
         }
 
-        var roleName = _roleManager.GetDonatorRole(player.UserId);
-        var rolesDict = _config.UltimateDonation.donator_roles;
-        if (!rolesDict.TryGetValue(roleName, out var donatorRole))
+        var roleKey = _roleManager.GetDonatorRole(sid);
+        if (!_config.DonatorRoles.TryGetValue(roleKey, out var dRol))
         {
-            response = "Your donor role is missing in config.";
+            response = "Your donor role missing in config.";
+            return false;
+        }
+        if (!dRol.Permissions.Contains("giveitem"))
+        {
+            response = t?.HelpGiveItemNoPerm ?? "You don't have 'giveitem' permission.";
             return false;
         }
 
-        if (donatorRole.permissions == null || !donatorRole.permissions.Contains("giveitem"))
+        if (!_cooldownManager.CanExecuteCommand(sid, roleKey, "giveitem"))
         {
-            response = "You do not have permission to give items.";
-            return false;
-        }
-
-        if (!_cooldownManager.CanExecuteCommand(player.UserId, roleName, "giveitem"))
-        {
-            response = "You have reached the usage limit for item giving this round.";
+            response = t?.HelpGiveItemLimit ?? "You reached your giveitem limit.";
             return false;
         }
 
         if (arguments.Count < 1)
         {
-            response = "Usage: .giveitem <ItemType>";
+            var all = string.Join(", ", _config.ItemAliases.Keys);
+            response = $"{(t?.HelpGiveItemUsage ?? "Usage: .giveitem <alias>")}\nPossible aliases: {all}";
             return false;
         }
 
-        var itemTypeStr = arguments.At(0);
-        if (!Enum.TryParse(itemTypeStr, true, out ItemType parsedItem))
+        var arg = arguments.At(0).ToLowerInvariant();
+        if (_config.ItemAliases.TryGetValue(arg, out var realItem))
+            arg = realItem;
+
+        if (!Enum.TryParse(arg, true, out ItemType itemType))
         {
-            response = $"Unknown ItemType: {itemTypeStr}";
+            var suggestion = string.Join(", ", _config.ItemAliases.Keys);
+            response = $"Unknown item alias '{arg}'. Possible aliases: {suggestion}";
             return false;
         }
 
-        player.AddItem(parsedItem);
-        _cooldownManager.RegisterCommandUsage(player.UserId, roleName, "giveitem");
+        if (_config.BlacklistedItems.Contains(itemType.ToString()))
+        {
+            response = t?.HelpGiveItemBlacklisted ?? "That item is blacklisted.";
+            return false;
+        }
 
-        response = $"You gave yourself item: {parsedItem}.";
+        // give item
+        player.AddItem(itemType);
+        _cooldownManager.RegisterCommandUsage(sid, roleKey, "giveitem");
+
+        response = $"You received {itemType}.";
         return true;
     }
 }

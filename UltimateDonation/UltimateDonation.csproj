@@ -127,20 +127,18 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AddRoleCommand.cs" />
     <Compile Include="ChangeRoleCommand.cs" />
-    <Compile Include="CheckLimitsCommand.cs" />
     <Compile Include="Config.cs" />
     <Compile Include="CooldownManager.cs" />
     <Compile Include="DonatorCommand.cs" />
     <Compile Include="EventHandler.cs" />
     <Compile Include="GiveItemCommand.cs" />
-    <Compile Include="PermissionsManager.cs" />
-    <Compile Include="Plugin.cs" />
+    <Compile Include="MyDonCommand.cs" />
+    <Compile Include="DonatorPlugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="RemoveRoleCommand.cs" />
     <Compile Include="RoleManager.cs" />
     <Compile Include="DonatorUtils.cs" />
+    <Compile Include="TranslationData.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

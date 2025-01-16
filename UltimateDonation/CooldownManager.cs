@@ -1,79 +1,95 @@
 ﻿using System.Collections.Generic;
 using Exiled.API.Features;
+using System.Linq;
 
+/// <summary>
+/// Developer note:
+/// We read the command-limits from Config.GlobalCommandLimits[roleKey].
+/// We do NOT do direct deconstruction (C# 7+ might support it if the extension is present,
+/// but let's avoid it for compatibility).
+/// </summary>
 public class CooldownManager
 {
-    private readonly Dictionary<string, Dictionary<string, int>> _usageLimits;
+    private readonly Dictionary<string, Dictionary<string, int>> _usageLimitsPerRole;
     private readonly Dictionary<string, Dictionary<string, int>> _commandUsages;
     private readonly DonatorPlugin _plugin;
 
     public CooldownManager(Config config, DonatorPlugin plugin)
     {
         _plugin = plugin;
-        _usageLimits = new Dictionary<string, Dictionary<string, int>>();
+
+        // Instead of "var (roleKey, cmdLimits) in config.GlobalCommandLimits", we do a normal foreach:
+        _usageLimitsPerRole = config.GlobalCommandLimits;
         _commandUsages = new Dictionary<string, Dictionary<string, int>>();
 
-        // Считываем лимиты команд из config.UltimateDonation.donator_roles
-        foreach (var kvp in config.UltimateDonation.donator_roles)
+        // We'll do this:
+        foreach (var kvp in _usageLimitsPerRole)
         {
-            var roleName = kvp.Key;
-            var roleData = kvp.Value;
+            string roleKey = kvp.Key;
+            Dictionary<string, int> cmdLimits = kvp.Value;
 
-            _usageLimits[roleName] = new Dictionary<string, int>();
-            // roleData.command_limits
-            foreach (var cmdLimit in roleData.command_limits)
-            {
-                _usageLimits[roleName][cmdLimit.Key] = cmdLimit.Value;
-            }
-
-            _plugin.LogDebug($"[CooldownManager] Role '{roleName}' command limits: {string.Join(", ", roleData.command_limits)}");
+            // Optionally log them
+            var line = string.Join(", ", cmdLimits.Select(x => $"{x.Key}={x.Value}"));
+            _plugin.LogDebug($"[CooldownManager] role '{roleKey}' => {line}");
         }
     }
 
-    // Проверка, можно ли ещё использовать команду
-    public bool CanExecuteCommand(string userId, string role, string command)
+    public bool CanExecuteCommand(string userId, string roleKey, string command)
     {
-        if (!_usageLimits.ContainsKey(role))
+        if (!_usageLimitsPerRole.ContainsKey(roleKey))
         {
-            _plugin.LogDebug($"[CooldownManager] Role '{role}' not found in usage limits.");
+            _plugin.LogDebug($"[CooldownManager] No usage limits for role '{roleKey}' in GlobalCommandLimits.");
             return false;
         }
-        if (!_usageLimits[role].ContainsKey(command))
+        var roleLimits = _usageLimitsPerRole[roleKey];
+        if (!roleLimits.ContainsKey(command))
         {
-            _plugin.LogDebug($"[CooldownManager] Command '{command}' not listed for role '{role}'.");
+            _plugin.LogDebug($"[CooldownManager] role '{roleKey}' does not define limit for command '{command}'.");
             return false;
         }
 
-        if (!_commandUsages.ContainsKey(userId))
-            _commandUsages[userId] = new Dictionary<string, int>();
+        if (!_commandUsages.TryGetValue(userId, out var userDict))
+        {
+            userDict = new Dictionary<string, int>();
+            _commandUsages[userId] = userDict;
+        }
 
-        if (!_commandUsages[userId].ContainsKey(command))
-            _commandUsages[userId][command] = 0;
+        if (!userDict.ContainsKey(command))
+            userDict[command] = 0;
 
-        int current = _commandUsages[userId][command];
-        int max = _usageLimits[role][command];
-        _plugin.LogDebug($"[CooldownManager] Checking usage {userId}/{role}/{command}: {current} of {max}");
-
-        return current < max;
+        var used = userDict[command];
+        var max = roleLimits[command];
+        return used < max;
     }
 
-    // Регистрируем использование команды
-    public void RegisterCommandUsage(string userId, string role, string command)
+    public void RegisterCommandUsage(string userId, string roleKey, string command)
     {
-        if (!_commandUsages.ContainsKey(userId))
-            _commandUsages[userId] = new Dictionary<string, int>();
+        if (!_commandUsages.TryGetValue(userId, out var userDict))
+        {
+            userDict = new Dictionary<string, int>();
+            _commandUsages[userId] = userDict;
+        }
 
-        if (!_commandUsages[userId].ContainsKey(command))
-            _commandUsages[userId][command] = 0;
+        if (!userDict.ContainsKey(command))
+            userDict[command] = 0;
 
-        _commandUsages[userId][command]++;
-        _plugin.LogDebug($"[CooldownManager] {userId} used '{command}' for role {role}, total uses: {_commandUsages[userId][command]}");
+        userDict[command]++;
+        _plugin.LogDebug($"[CooldownManager] {userId} used {command}, now={userDict[command]}");
     }
 
-    // Сбросить счётчики в конце/начале раунда
+    public int GetUsageCount(string userId, string command)
+    {
+        if (_commandUsages.TryGetValue(userId, out var userDict))
+        {
+            if (userDict.TryGetValue(command, out var used))
+                return used;
+        }
+        return 0;
+    }
+
     public void ResetCooldowns()
     {
         _commandUsages.Clear();
-        _plugin.LogDebug("[CooldownManager] Reset all command usage counters.");
+        _plugin.LogDebug("[CooldownManager] All usage counters reset for new round.");
     }
 }

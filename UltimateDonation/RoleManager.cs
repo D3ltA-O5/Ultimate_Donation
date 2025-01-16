@@ -1,7 +1,13 @@
 ﻿using System;
+using System.Linq;
 using Exiled.API.Features;
 using UltimateDonation;
 
+/// <summary>
+/// Developer note:
+/// Manages donor roles, checks if user is donor, assigns or removes donor from config, etc.
+/// Code now reads global usage-limits from Config.GlobalCommandLimits instead of each role object.
+/// </summary>
 public class RoleManager
 {
     private readonly Config _config;
@@ -15,64 +21,85 @@ public class RoleManager
 
     public void AddDonation(string steamId, string role, int days)
     {
-        steamId = DonatorUtils.CleanSteamId(steamId); // убираем @steam на всякий случай
+        steamId = DonatorUtils.CleanSteamId(steamId);
 
-        var rolesDict = _config.UltimateDonation.donator_roles;
-        if (!rolesDict.ContainsKey(role))
+        if (!_config.DonatorRoles.ContainsKey(role))
         {
-            _plugin.LogDebug($"[RoleManager] Attempt to add donation for {steamId}, but role '{role}' isn't in config.");
-            throw new ArgumentException($"Role {role} does not exist in config.");
+            _plugin.LogDebug($"[RoleManager] Attempt to add donation to unknown role '{role}'.");
+            throw new ArgumentException($"Role '{role}' not found in config.");
         }
 
-        var expiry = DateTime.Now.AddDays(days);
-
-        _config.UltimateDonation.player_donations[steamId] = new PlayerDonation
+        var expiry = DateTime.Today.AddDays(days);
+        var existing = _config.PlayerDonations.FirstOrDefault(d => d.SteamId == steamId);
+        if (existing == null)
         {
-            steam_id = steamId,
-            role = role,
-            expiry_date = expiry
-        };
+            var newDon = new PlayerDonation
+            {
+                Nickname = "Unknown-" + steamId, // or fill manually
+                SteamId = steamId,
+                Role = role,
+                ExpiryDate = expiry
+            };
+            _config.PlayerDonations.Add(newDon);
+        }
+        else
+        {
+            existing.Role = role;
+            existing.ExpiryDate = expiry;
+        }
 
-        _plugin.LogDebug($"[RoleManager] Player {steamId} got donor role '{role}' until {expiry}.");
+        _plugin.LogDebug($"[RoleManager] {steamId} => {role}, expiry={expiry:yyyy-MM-dd} (+{days} days).");
     }
 
     public void RemoveDonation(string steamId)
     {
         steamId = DonatorUtils.CleanSteamId(steamId);
-
-        if (_config.UltimateDonation.player_donations.Remove(steamId))
-            _plugin.LogDebug($"[RoleManager] Donor role removed from {steamId}.");
+        var idx = _config.PlayerDonations.FindIndex(d => d.SteamId == steamId);
+        if (idx >= 0)
+        {
+            _config.PlayerDonations.RemoveAt(idx);
+            _plugin.LogDebug($"[RoleManager] Removed donation from {steamId}.");
+        }
         else
-            _plugin.LogDebug($"[RoleManager] Tried to remove donor role from {steamId}, but not found.");
+        {
+            _plugin.LogDebug($"[RoleManager] No donation entry for {steamId}.");
+        }
     }
 
     public bool IsDonator(string steamId)
     {
         steamId = DonatorUtils.CleanSteamId(steamId);
-
-        var dict = _config.UltimateDonation.player_donations;
-        if (!dict.TryGetValue(steamId, out var donation))
-        {
-            _plugin.LogDebug($"[RoleManager] Player {steamId} not found in donor list.");
-            return false;
-        }
-
-        bool active = donation.expiry_date > DateTime.Now;
-        _plugin.LogDebug($"[RoleManager] IsDonator({steamId})? role={donation.role}, expiry={donation.expiry_date}, active={active}");
-        return active;
+        var don = _config.PlayerDonations.FirstOrDefault(d => d.SteamId == steamId);
+        if (don == null) return false;
+        return don.ExpiryDate.Date >= DateTime.Today;
     }
 
     public string GetDonatorRole(string steamId)
     {
         steamId = DonatorUtils.CleanSteamId(steamId);
+        var don = _config.PlayerDonations.FirstOrDefault(d => d.SteamId == steamId);
+        if (don == null) return string.Empty;
+        if (don.ExpiryDate.Date >= DateTime.Today) return don.Role;
+        return string.Empty;
+    }
 
-        var dict = _config.UltimateDonation.player_donations;
-        if (!dict.TryGetValue(steamId, out var donation))
-            return string.Empty;
+    public bool IsBlacklistedRole(string roleName)
+    {
+        return _config.BlacklistedRoles.Contains(roleName.ToLowerInvariant());
+    }
 
-        if (donation.expiry_date <= DateTime.Now)
-            return string.Empty;
+    public bool CanChangeToScpYet()
+    {
+        var time = Round.ElapsedTime.TotalSeconds;
+        return time < _config.ScpChangeTimeLimit;
+    }
 
-        return donation.role; // e.g. "vip" or "premium"
+    public int GetDaysLeft(string steamId)
+    {
+        steamId = DonatorUtils.CleanSteamId(steamId);
+        var don = _config.PlayerDonations.FirstOrDefault(d => d.SteamId == steamId);
+        if (don == null) return 0;
+        var diff = (don.ExpiryDate.Date - DateTime.Today).TotalDays;
+        return diff > 0 ? (int)diff : 0;
     }
 }
