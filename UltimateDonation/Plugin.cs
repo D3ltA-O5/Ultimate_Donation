@@ -3,10 +3,8 @@ using System.IO;
 using Exiled.API.Features;
 using Exiled.Events.EventArgs.Player;
 using Exiled.Events.EventArgs.Server;
+using UltimateDonation;
 
-/// <summary>
-/// Главный класс плагина, наследуется от Plugin<Config>.
-/// </summary>
 public class DonatorPlugin : Plugin<Config>
 {
     public static DonatorPlugin Instance { get; private set; }
@@ -15,13 +13,11 @@ public class DonatorPlugin : Plugin<Config>
     private RoleManager _roleManager;
     private CooldownManager _cooldownManager;
 
-    // Название плагина (как будет отображаться в логах EXILED).
     public override string Name => "UltimateDonation";
     public override string Author => "YourName / Team";
     public override Version Version => new Version(1, 0, 0);
     public override Version RequiredExiledVersion => new Version(7, 0, 0);
 
-    // Для удобства
     public PermissionsManager PermissionsManager => _permissionsManager;
     public RoleManager RoleManager => _roleManager;
     public CooldownManager CooldownManager => _cooldownManager;
@@ -33,21 +29,18 @@ public class DonatorPlugin : Plugin<Config>
 
         Log.Info($"[UltimateDonation] Plugin is enabling. Debug = {Config.UltimateDonation.debug}");
 
-        // Если ultimate_donation.is_enabled = false, можно сразу ничего не делать:
         if (!Config.UltimateDonation.is_enabled)
         {
             Log.Info("[UltimateDonation] Plugin is disabled via config (ultimate_donation.is_enabled = false).");
             return;
         }
 
-        // Инициализируем менеджеры
         _permissionsManager = new PermissionsManager(Path.Combine(Paths.Configs, "permissions.yml"), this);
         _roleManager = new RoleManager(Config, this);
         _cooldownManager = new CooldownManager(Config, this);
 
         UpdatePermissions();
 
-        // Подписки на события
         Exiled.Events.Handlers.Player.Verified += OnPlayerVerified;
         Exiled.Events.Handlers.Server.RoundEnded += OnRoundEnded;
 
@@ -56,7 +49,6 @@ public class DonatorPlugin : Plugin<Config>
 
     public override void OnDisabled()
     {
-        // Если в OnEnabled ничего не инициализировалось (потому что is_enabled=false), то аккуратнее.
         if (Instance == this)
         {
             Exiled.Events.Handlers.Player.Verified -= OnPlayerVerified;
@@ -72,27 +64,27 @@ public class DonatorPlugin : Plugin<Config>
         if (Config.UltimateDonation.debug)
             Log.Debug($"[UltimateDonation] OnPlayerVerified: {ev.Player.UserId}");
 
-        // Проверяем донат
-        if (_roleManager != null && _roleManager.IsDonator(ev.Player.UserId))
+        // Очищаем суффикс "@steam"
+        var cleanedId = DonatorUtils.CleanSteamId(ev.Player.UserId);
+
+        if (_roleManager != null && _roleManager.IsDonator(cleanedId))
         {
-            var roleKey = _roleManager.GetDonatorRole(ev.Player.UserId);
-            // Пытаемся найти описание роли (DonatorRole) в config
+            var roleKey = _roleManager.GetDonatorRole(cleanedId);
             if (Config.UltimateDonation.donator_roles.TryGetValue(roleKey, out var donatorRole))
             {
-                // Устанавливаем RankName/RankColor
                 ev.Player.RankName = donatorRole.rank_name;
                 ev.Player.RankColor = donatorRole.rank_color;
 
-                LogDebug($"[UltimateDonation] Player {ev.Player.UserId} received donor rank '{donatorRole.rank_name}' ({donatorRole.rank_color}).");
+                LogDebug($"[UltimateDonation] Player {cleanedId} got donor rank '{donatorRole.rank_name}' ({donatorRole.rank_color}).");
             }
             else
             {
-                LogDebug($"[UltimateDonation] Player {ev.Player.UserId} has donor role '{roleKey}', but it's not found in donator_roles.");
+                LogDebug($"[UltimateDonation] Player {cleanedId} has donor role '{roleKey}', but it's not found in donator_roles.");
             }
         }
         else
         {
-            LogDebug($"[UltimateDonation] Player {ev.Player.UserId} is not a donor.");
+            LogDebug($"[UltimateDonation] Player {cleanedId} is not a donor.");
         }
     }
 

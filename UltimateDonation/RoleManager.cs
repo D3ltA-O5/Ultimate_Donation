@@ -1,5 +1,6 @@
 ﻿using System;
 using Exiled.API.Features;
+using UltimateDonation;
 
 public class RoleManager
 {
@@ -12,13 +13,14 @@ public class RoleManager
         _plugin = plugin;
     }
 
-    // Добавить донат игроку <steamId> с ролью <role> на days дней
     public void AddDonation(string steamId, string role, int days)
     {
+        steamId = DonatorUtils.CleanSteamId(steamId); // убираем @steam на всякий случай
+
         var rolesDict = _config.UltimateDonation.donator_roles;
         if (!rolesDict.ContainsKey(role))
         {
-            _plugin.LogDebug($"[RoleManager] Attempt to add donation for {steamId}, but role '{role}' isn't in donator_roles.");
+            _plugin.LogDebug($"[RoleManager] Attempt to add donation for {steamId}, but role '{role}' isn't in config.");
             throw new ArgumentException($"Role {role} does not exist in config.");
         }
 
@@ -34,21 +36,26 @@ public class RoleManager
         _plugin.LogDebug($"[RoleManager] Player {steamId} got donor role '{role}' until {expiry}.");
     }
 
-    // Удалить донат-роль
     public void RemoveDonation(string steamId)
     {
+        steamId = DonatorUtils.CleanSteamId(steamId);
+
         if (_config.UltimateDonation.player_donations.Remove(steamId))
             _plugin.LogDebug($"[RoleManager] Donor role removed from {steamId}.");
         else
-            _plugin.LogDebug($"[RoleManager] Tried to remove donor role from {steamId}, but entry not found.");
+            _plugin.LogDebug($"[RoleManager] Tried to remove donor role from {steamId}, but not found.");
     }
 
-    // Проверяем, активна ли донат-роль
     public bool IsDonator(string steamId)
     {
+        steamId = DonatorUtils.CleanSteamId(steamId);
+
         var dict = _config.UltimateDonation.player_donations;
         if (!dict.TryGetValue(steamId, out var donation))
+        {
+            _plugin.LogDebug($"[RoleManager] Player {steamId} not found in donor list.");
             return false;
+        }
 
         bool active = donation.expiry_date > DateTime.Now;
         _plugin.LogDebug($"[RoleManager] IsDonator({steamId})? role={donation.role}, expiry={donation.expiry_date}, active={active}");
@@ -57,6 +64,8 @@ public class RoleManager
 
     public string GetDonatorRole(string steamId)
     {
+        steamId = DonatorUtils.CleanSteamId(steamId);
+
         var dict = _config.UltimateDonation.player_donations;
         if (!dict.TryGetValue(steamId, out var donation))
             return string.Empty;
