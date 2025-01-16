@@ -1,3 +1,5 @@
+[README на русском](README.ru.md)
+
 # UltimateDonation
 
 **UltimateDonation** is a plugin for [SCP: Secret Laboratory](https://store.steampowered.com/app/700330/SCP_Secret_Laboratory) built with the [EXILED](https://github.com/Exiled-Team/EXILED) framework. This plugin is designed to manage donor privileges in a way that **restricts access to administrative controls**, while allowing donors to use controlled commands and features configured by the server administrators. This ensures that donor abuse of admin commands is entirely avoided.
