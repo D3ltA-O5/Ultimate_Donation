@@ -1,3 +1,5 @@
+[README on english](README.md)
+
 # UltimateDonation
 
 **UltimateDonation** — это плагин для [SCP: Secret Laboratory](https://store.steampowered.com/app/700330/SCP_Secret_Laboratory), созданный с использованием [EXILED](https://github.com/Exiled-Team/EXILED) фреймворка. Этот плагин предназначен для управления донатными привилегиями, **исключая доступ к административным функциям**, но позволяя использовать контролируемые команды, настроенные администраторами сервера. Это гарантирует, что донатеры не смогут злоупотреблять админскими командами.
