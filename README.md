@@ -41,7 +41,7 @@ This plugin is ideal for servers that want to reward donors while maintaining st
 ## 🚀 Installation Instructions
 
 1. **Download** the latest release of `UltimateDonation.dll` from the [Releases](https://github.com/D3ltA-O5//Ultimate_Donation/releases) page.
-2. **Place** the `Ultimate_Donation.dll` file into your server's `EXILED/Plugins` directory.
+2. **Place** the `UltimateDonation.dll` file into your server's `EXILED/Plugins` directory.
 3. **Restart** your SCP: SL server to generate the configuration and translation files.
 4. **Configure** the plugin by editing the exiled config file and `donat_translations.yml` files in your server's `EXILED/Configs` directory.
 
