@@ -2,11 +2,13 @@
 
 /// <summary>
 /// Developer note:
-/// English text for help messages & such. 
-/// Each property matches a key in 'donat_translations.yml'.
+/// Тексты сообщений для команд и прочего функционала.
+/// Каждое свойство сопоставлено с соответствующим ключом в 'donat_translations.yml' (или другом YAML-файле переводов).
 /// </summary>
 public class TranslationData
 {
+    // --- Первоначальные поля ---
+
     [YamlMember(Alias = "help_donator_command")]
     public string HelpDonatorCommand { get; set; } = "Donator plugin help. (no YAML)";
 
@@ -57,4 +59,67 @@ public class TranslationData
 
     [YamlMember(Alias = "aliases_note")]
     public string AliasesNote { get; set; } = "You can define aliases in UltimateDonation.yaml (role_aliases, item_aliases).";
+
+    // --- Новые (добавленные) поля для расширенной функциональности ---
+
+    // Общие сообщения:
+    [YamlMember(Alias = "only_player_can_use_command")]
+    public string OnlyPlayerCanUseCommand { get; set; } = "Only a player can use this command (not console).";
+
+    [YamlMember(Alias = "player_object_not_found")]
+    public string PlayerObjectNotFound { get; set; } = "Failed to find your player object.";
+
+    [YamlMember(Alias = "missing_donor_role_in_config")]
+    public string MissingDonorRoleInConfig { get; set; } = "Your donor role is missing in config.";
+
+    [YamlMember(Alias = "unknown_role_alias")]
+    public string UnknownRoleAlias { get; set; } = "Unknown role alias/id";
+
+    [YamlMember(Alias = "change_role_success")]
+    public string ChangeRoleSuccess { get; set; } = "You changed your role to {roleName}.";
+
+    // GiveItemCommand:
+    [YamlMember(Alias = "cannot_give_item_as_scp")]
+    public string CannotGiveItemAsScp { get; set; } = "You cannot give items to yourself while you are an SCP.";
+
+    [YamlMember(Alias = "unknown_item_alias")]
+    public string UnknownItemAlias { get; set; } = "Unknown item alias";
+
+    [YamlMember(Alias = "give_item_success")]
+    public string GiveItemSuccess { get; set; } = "You received {itemType}.";
+
+    // MyDonCommand:
+    [YamlMember(Alias = "mydon_only_player")]
+    public string MyDonOnlyPlayer { get; set; } = "This command can only be used by players in the client console.";
+
+    [YamlMember(Alias = "mydon_not_donor")]
+    public string MyDonNotDonor { get; set; } = "You are not a donor, or your donation has expired.";
+
+    [YamlMember(Alias = "mydon_role_not_configured")]
+    public string MyDonRoleNotConfigured { get; set; } = "Your donor role is not configured correctly. Please contact an administrator.";
+
+    [YamlMember(Alias = "mydon_no_limits_found")]
+    public string MyDonNoLimitsFound { get; set; } = "No global command limits found for your role '{roleKey}'.";
+
+    [YamlMember(Alias = "mydon_no_commands_tracked")]
+    public string MyDonNoCommandsTracked { get; set; } = "No commands available for usage tracking.";
+
+    [YamlMember(Alias = "mydon_status_info")]
+    public string MyDonStatusInfo { get; set; } =
+        "=== Your Donation Status ===\n" +
+        "- Role: {roleName} (Key: {roleKey})\n" +
+        "- Days Left: {daysLeft}\n" +
+        "- Permissions: {permissions}\n" +
+        "- Command Usage This Round: {usageSummary}\n" +
+        "(Tip: Use '.changerole' or '.giveitem' if allowed by your role.)";
+
+    // DonatorCommand:
+    [YamlMember(Alias = "donator_only_players")]
+    public string DonatorOnlyPlayers { get; set; } = "This command can only be used by a player in client console.";
+
+    [YamlMember(Alias = "prefix_not_allowed")]
+    public string PrefixNotAllowed { get; set; } = "This donor role does not allow custom prefixes.";
+
+    [YamlMember(Alias = "prefix_set_success")]
+    public string PrefixSetSuccess { get; set; } = "Custom prefix '{prefixValue}' color='{colorValue}' set successfully!";
 }

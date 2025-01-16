@@ -130,6 +130,7 @@
     <Compile Include="ChangeRoleCommand.cs" />
     <Compile Include="Config.cs" />
     <Compile Include="CooldownManager.cs" />
+    <Compile Include="DonatorAdminCommand.cs.cs" />
     <Compile Include="DonatorCommand.cs" />
     <Compile Include="EventHandler.cs" />
     <Compile Include="GiveItemCommand.cs" />
