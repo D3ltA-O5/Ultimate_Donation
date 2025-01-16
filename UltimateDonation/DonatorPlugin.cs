@@ -15,7 +15,7 @@ public class DonatorPlugin : Plugin<Config>
     private TranslationData _translationData; // optional
 
     public override string Name => "UltimateDonation";
-    public override string Author => "YourName/Team";
+    public override string Author => "cybercodeveloper";
     public override Version Version => new Version(10, 0, 0);
     public override Version RequiredExiledVersion => new Version(7, 0, 0);
 
