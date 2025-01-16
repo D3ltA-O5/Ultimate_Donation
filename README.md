@@ -2,6 +2,13 @@
 
 **UltimateDonation** is a plugin for [SCP: Secret Laboratory](https://store.steampowered.com/app/700330/SCP_Secret_Laboratory) built with the [EXILED](https://github.com/Exiled-Team/EXILED) framework. This plugin is designed to manage donor privileges in a way that **restricts access to administrative controls**, while allowing donors to use controlled commands and features configured by the server administrators. This ensures that donor abuse of admin commands is entirely avoided.
 
+## 📚 Additional Guides for Players
+
+We have created detailed guides for donors that are already formatted for Discord and are perfect for showcasing the server’s donor privileges:
+
+- **[English Guide for Donors](https://github.com/D3ltA-O5/Ultimate_Donation/blob/main/eng_guide_for_donaters)**  
+- **[Russian Guide for Donors](https://github.com/D3ltA-O5/Ultimate_Donation/blob/main/ru_guide_for_donaters)**  
+
 ---
 
 ## 🎯 Purpose
