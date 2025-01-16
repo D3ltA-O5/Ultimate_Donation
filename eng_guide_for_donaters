@@ -1,0 +1,101 @@
+(Already has formatting for Discord, just copy and paste! Well, you can change it to taste, of course!)
+
+
+# 🛡️ **Guide to Donor Privileges on the Server** 🛡️
+
+Welcome to the server! We are excited to offer you unique privileges to support the server. Our donation features are designed to make the game more enjoyable while preventing any form of abuse. Please read this guide to learn how to make the most of your privileges.
+
+---
+
+## 💎 **Your Commands**
+
+After acquiring donor status, you will have access to special commands. Use them in the in-game console (`~`) or in chat where applicable.
+
+### 🔄 **Change Role**
+Allows you to change your role at the start or during the round (if permitted by your donor role).
+
+- **Command**: `.changerole <RoleName>`  
+  **Examples**:  
+  - `.changerole 173` — Become SCP-173.  
+  - `.changerole scientist` — Become a scientist.
+
+- **Aliases (shortcuts)**: `.cr`, `.role`
+
+---
+
+### 🎁 **Get Items**
+Allows you to receive items if permitted by your donor role.
+
+- **Command**: `.giveitem <ItemName>`  
+  **Examples**:  
+  - `.giveitem rifle` — Get a rifle.  
+  - `.giveitem medkit` — Get a medkit.
+
+- **Aliases (shortcuts)**: `.gi`, `.givei`
+
+---
+
+### 📝 **Check Donation Status**
+Check information about your donor status: how many days are left, what commands you can use, and how many times you’ve used them this round.
+
+- **Command**: `.mydon`  
+  **Example Output**:  
+
+`=== Your Donation Status ===
+
+Role: KETER
+Days Left: 29
+Permissions: changerole, giveitem
+Command Usage This Round: changerole: 1/5; giveitem: 3/5` 
+
+- **Aliases (shortcuts)**: `.mydonation`, `.md`
+
+---
+
+### 🎨 **Set a Custom Prefix**
+Some donor roles allow you to set a custom prefix and color for your name in chat and the player list.
+
+- **Command**: `.donator prefix <Prefix> <Color>`  
+  **Example**: `.donator prefix [VIP] green`
+
+---
+
+## ⚙️ **How Donor Privileges Work**
+
+- All commands and features are tied to your donor role.  
+- You cannot exceed the command usage limits set for your role (e.g., 5 uses per round).  
+- Certain roles or items may be restricted due to server settings.  
+
+---
+
+## 🚨 **Donor Rules**
+
+We appreciate your support, but please follow the server rules.  
+1. **Abuse of privileges is prohibited** (e.g., spamming item commands).  
+2. **Do not share donor items with other players to gain an advantage.**  
+3. **Do not use commands to disrupt game balance.**
+
+Breaking these rules may result in suspension or removal of your privileges.
+
+---
+
+## 🛍️ **How to Get Donor Privileges**
+
+1. Go to the **donation channel** in our Discord server.  
+2. Review the available donor levels:  
+ - 🟢 **SAFE**: Basic commands, access to `.changerole` and `.giveitem` (2 uses per round).  
+ - 🟠 **EUCLID**: Extended privileges, more commands, and higher limits.  
+ - 🔴 **KETER**: Maximum privileges, including custom prefix settings.  
+
+3. Select the donor level that suits you and contact an admin to make a payment.  
+4. Once confirmed, your privileges will be activated on the server!
+
+---
+
+## ❓ **Questions and Support**
+
+If you have any questions about donor privileges, please reach out in the **#support** channel of our Discord or contact an admin directly. We’re always happy to help!
+
+---
+
+Thank you for supporting the server! 💖 Your contributions help improve the experience for everyone!
