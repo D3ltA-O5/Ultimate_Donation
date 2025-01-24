@@ -43,7 +43,7 @@
 
 1. **Скачайте** последнюю версию `UltimateDonation.dll` с [Releases](https://github.com/D3ltA-O5/Ultimate_Donation/releases).
 2. **Поместите** файл `UltimateDonation.dll` в папку `EXILED/Plugins` на вашем сервере.
-3. **Перезапустите** сервер, чтобы сгенерировать конфиг, а также файлы `donat_translations.yml` и `DonationsData.json`.
+3. **Перезапустите** сервер, чтобы сгенерировать конфиг, а также файлы `donat_translations.yml` и `DonationsData.yml`.
 4. **Настройте роли** в основном конфиге EXILED.
 5. **Измените переводы** в файле `donat_translations.yml`.
 
