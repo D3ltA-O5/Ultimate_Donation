@@ -106,7 +106,7 @@ CedMod reads the same permission strings, but you can edit them in the browser:
 <div align="center">
 
 <!-- Placeholder — drop your screenshot here -->
-![CedMod permission UI – placeholder](docs/cedmod_permission_placeholder.png)
+![CedMod permission UI – placeholder]([docs/cedmod_permission_placeholder.png](https://github.com/D3ltA-O5/Ultimate_Donation/blob/main/README_Resources/Screenshot%202025-05-11%20182346.png))
 
 *Screenshot: how it looks in CedMod (replace this image).*
 
