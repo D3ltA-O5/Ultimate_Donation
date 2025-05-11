@@ -43,11 +43,11 @@ Server staff manage donations through Remote Admin (RA) commands that respect th
 1. **Download** the latest `UltimateDonation.dll` from the [Releases](https://github.com/D3ltA-O5/Ultimate_Donation/releases) page.  
 2. **Drop** the file into `EXILED/Plugins`.  
 3. **Restart** the server.  
-   - The plugin will create `EXILED/Configs/Ultimate_Donation/` and generate:
-     - `Config.yml` → role presets (Safe / Euclid / Keter)  
+   - The plugin will create `EXILED/Configs/Ultimate_Donation/` and generate: 
      - `donat_translations.yml` → full message template with aliases  
      - `DonationsData.yml` → **example entries** so you see the format immediately.  
-4. **Tweak** roles in `Config.yml`, messages in `donat_translations.yml`.  
+- `[your server port]-config.yml` str `ultimate_donation:` → donation role presets (Safe / Euclid / Keter) 
+4. **Tweak** roles in `[your server port]-config.yml`, messages in `donat_translations.yml`.  
 5. **Set up permissions** (see next section).
 
 ---
@@ -99,9 +99,11 @@ CedMod reads the same permission strings, but you can edit them in the browser:
 1. Open **CedMod → Groups**.  
 
 2. Click **Create** (or edit an existing group). 
+
 ![CedMod permission UI – placeholder](https://github.com/D3ltA-O5/Ultimate_Donation/blob/main/README_Resources/Screenshot%202025-05-11%20182346.png) 
 
-3. In *Custom permissions* add lines like `donator.addrole` or `donator.*`.  
+3. In *Custom permissions* add lines like `donator.addrole` or `donator.*` or any other permission.  
+
 ![CedMod permission UI 2 – placeholder](https://github.com/D3ltA-O5/Ultimate_Donation/blob/main/README_Resources/Screenshot%202025-05-11%20182505.png) 
 
 4. Save and assign users to that group.
