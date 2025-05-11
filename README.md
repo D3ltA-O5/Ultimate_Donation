@@ -2,147 +2,229 @@
 
 # UltimateDonation
 
-**UltimateDonation** is a plugin for [SCP: Secret Laboratory](https://store.steampowered.com/app/700330/SCP_Secret_Laboratory) built with the [EXILED](https://github.com/Exiled-Team/EXILED) framework. This plugin provides donor management functionality while **restricting access to administrative controls**, ensuring secure and balanced gameplay. All donor data is now dynamically stored and managed in a `DonationsData` file, which is updated in real time.
+**UltimateDonation** is a plugin for [SCP: Secret Laboratory](https://store.steampowered.com/app/700330/SCP_Secret_Laboratory) built with the [EXILED](https://github.com/Exiled-Team/EXILED) framework.  
+The plugin gives donors cool in-game perks **while keeping administrative controls locked down via a flexible permission system**.  
+All donor data is stored in *real time* inside the `DonationsData.yml` file (no server restart required).
 
 ## 📚 Additional Guides for Players
 
-We have created detailed guides for donors, formatted for Discord and perfect for showcasing donor privileges:
+We have ready-to-paste Discord guides that you can share with your community:
 
-- **[English Guide for Donors](https://github.com/D3ltA-O5/Ultimate_Donation/blob/main/eng_guide_for_donaters)**  
-- **[Russian Guide for Donors](https://github.com/D3ltA-O5/Ultimate_Donation/blob/main/ru_guide_for_donaters)**  
+- **[English Donor Guide](https://github.com/D3ltA-O5/Ultimate_Donation/blob/main/eng_guide_for_donaters)**  
+- **[Русский гайд для донатеров](https://github.com/D3ltA-O5/Ultimate_Donation/blob/main/ru_guide_for_donaters)**  
 
 ---
 
 ## 🎯 Purpose
 
-The main purpose of **UltimateDonation** is to provide in-game privileges to donors while maintaining strict administrative control. Donors **cannot access administrative tools or Remote Admin (RA)**. Instead, they gain access to **strictly defined commands** with configurable limits. 
-
-Key improvements:
-- **Dynamic Data Storage**: Donor information is stored in a dedicated `DonationsData` file, separate from the EXILED configuration.
-- **Real-Time Updates**: Administrative actions (e.g., adding or removing roles) update the `DonationsData` file instantly.
-- **Configurable Roles**: Donor roles are defined and configured within the main EXILED configuration.
-- **RA Integration**: Full control over donor privileges directly from the Remote Admin console.
+UltimateDonation is designed to give donors exciting privileges, but **never actual admin power**.  
+All donor commands are limited, rate-bound, and fully configurable.  
+Server staff manage donations through Remote Admin (RA) commands that respect the EXILED / CedMod permission system.
 
 ---
 
 ## 🎉 Features
 
-- **Dynamic Donor Management**: Donor data is dynamically stored in `DonationsData` for real-time updates.
-- **Controlled Commands**: Allow donors to use commands like `.changerole` or `.giveitem` with strict permissions and limits.
-- **RA Command Integration**: Manage donor roles, freezing, and privileges directly from the RA console.
-- **Custom Prefixes**: Enable certain donor roles to set personalized prefixes and colors.
-- **Global and Individual Freezing**: Temporarily suspend donor privileges globally or individually.
-- **Blacklist System**: Restrict access to specific roles or items.
-- **Usage Limits**: Enforce per-round usage limits for donor commands.
-- **Aliases for Commands**: Define role and item aliases for ease of use.
-- **Translation Support**: Customize all plugin messages through `donat_translations.yml`.
+| ✔ | Feature | Notes |
+|---|---------|-------|
+| ✅ | **Dynamic Donor Storage** | Everything lives in `EXILED/Configs/Ultimate_Donation/DonationsData.yml` and updates instantly. |
+| ✅ | **Strict Permission Check** | Admin RA commands use standard permission strings (`donator.addrole`, …). |
+| ✅ | **Configurable Roles** | Safe, Euclid, Keter examples already included in **Config.yml**. |
+| ✅ | **Custom Prefixes** | Optional per-role coloured [VIP] tags. |
+| ✅ | **Global / Individual Freeze** | Pause all donations or a single player’s donation timer. |
+| ✅ | **Blacklist & Limits** | For roles, items, and per-round command usage. |
+| ✅ | **Translation File** | `donat_translations.yml` holds every message + alias. |
+| ✅ | **EXILED & CedMod Friendly** | Works out of the box with both permission providers. |
 
 ---
 
-## 🚀 Installation Instructions
+## 🚀 Installation
 
-1. **Download** the latest release of `UltimateDonation.dll` from the [Releases](https://github.com/D3ltA-O5/Ultimate_Donation/releases) page.
-2. **Place** the `UltimateDonation.dll` file into your server's `EXILED/Plugins` directory.
-3. **Restart** your SCP: SL server to generate the config, `donat_translations.yml` and `DonationsData.json` files.
-4. **Configure Roles**: Edit the donor role configuration in your main EXILED config file.
-5. **Manage Translations**: Customize player-facing messages in the `donat_translations.yml` file.
+1. **Download** the latest `UltimateDonation.dll` from the [Releases](https://github.com/D3ltA-O5/Ultimate_Donation/releases) page.  
+2. **Drop** the file into `EXILED/Plugins`.  
+3. **Restart** the server.  
+   - The plugin will create `EXILED/Configs/Ultimate_Donation/` and generate:
+     - `Config.yml` → role presets (Safe / Euclid / Keter)  
+     - `donat_translations.yml` → full message template with aliases  
+     - `DonationsData.yml` → **example entries** so you see the format immediately.  
+4. **Tweak** roles in `Config.yml`, messages in `donat_translations.yml`.  
+5. **Set up permissions** (see next section).
+
+---
+
+## 🔐 Setting Up Admin Permissions
+
+UltimateDonation’s admin commands run only if the RA sender has the matching permission string.  
+There are **two common ways** to grant them:
+
+### 1. Editing `permissions.yml` directly (pure EXILED)
+
+Add permission lines into the EXILED permissions file:
+
+    groups:
+      senioradmin:
+        permissions:
+          - donator.*              # full access to all plugin commands
+          - player.*               # regular RA commands, example
+        inheritance: []
+        is_hidden: false
+
+      junioradmin:
+        permissions:
+          - donator.addrole
+          - donator.removerole
+          - donator.infoplayer
+        inheritance: []
+        is_hidden: false
+
+> Reload with `permissions reload` or restart the server.
+
+**Available permission keys**
+
+| Command | Permission |
+|---------|------------|
+| `donator addrole` | `donator.addrole` |
+| `donator removerole` | `donator.removerole` |
+| `donator freezeall` | `donator.freezeall` |
+| `donator freezeplayer` | `donator.freezeplayer` |
+| `donator infoplayer` | `donator.infoplayer` |
+| `donator listroleplayers` | `donator.listroleplayers` |
+| `donator listalldonations` | `donator.listalldonations` |
+| *all of the above* | `donator.*` |
+
+### 2. Via CedMod web panel
+
+CedMod reads the same permission strings, but you can edit them in the browser:
+
+1. Open **CedMod → Groups**.  
+2. Click **Create** (or edit an existing group).  
+3. In *Custom permissions* add lines like `donator.addrole` or `donator.*`.  
+4. Save and assign users to that group.
+
+> The change is live instantly — no file editing required.
+
+<div align="center">
+
+<!-- Placeholder — drop your screenshot here -->
+![CedMod permission UI – placeholder](docs/cedmod_permission_placeholder.png)
+
+*Screenshot: how it looks in CedMod (replace this image).*
+
+</div>
 
 ---
 
 ## 📋 Commands
 
-### **For Players**
+### For Players
 
-| Command                  | Aliases              | Description                                                                                 | Example                           |
-|---------------------------|----------------------|---------------------------------------------------------------------------------------------|-----------------------------------|
-| `.changerole`            | `.cr`, `.role`       | Allows donors to change their role (if permitted).                                          | `.changerole 173`                |
-| `.giveitem`              | `.gi`, `.givei`      | Allows donors to give themselves items (if permitted).                                      | `.giveitem rifle`                |
-| `.mydon`                 | `.mydonation`, `.md` | Displays donor status, days remaining, and command usage limits.                            | `.mydon`                         |
-| `.donator prefix`        | N/A                  | Allows eligible donors to set a custom prefix and color.                                    | `.donator prefix [VIP] green`    |
+| Command | Aliases | Description |
+|---------|---------|-------------|
+| `.changerole` | `.cr`, `.role`, `.chrole` | Change your current class (if allowed). |
+| `.giveitem` | `.gi`, `.givei`, `.giveweapon` | Spawn yourself an item / weapon. |
+| `.mydon` | `.mydonation`, `.mydn`, `.md` | See remaining days, limits, permissions. |
+| `.donator prefix <Prefix> <Color>` | — | Set a custom tag (if role allows). |
 
-### **For Admins (RA)**
+### For Admins (Remote Admin)
 
-| Command                     | Description                                                                                     | Example                                  |
-|------------------------------|-------------------------------------------------------------------------------------------------|------------------------------------------|
-| `donator addrole`           | Assign a donor role to a player for a specific number of days.                                  | `donator addrole 76561199481494871 keter 30` |
-| `donator removerole`        | Remove a donor role from a player.                                                              | `donator removerole 76561199481494871`      |
-| `donator freezeall`         | Freeze or unfreeze all donor privileges globally.                                               | `donator freezeall true`                   |
-| `donator freezeplayer`      | Freeze or unfreeze donor privileges for a specific player.                                      | `donator freezeplayer 76561199481494871 true` |
-| `donator infoplayer`        | View detailed donor information for a specific player.                                          | `donator infoplayer 76561199481494871`      |
-| `donator listroleplayers`   | List all players with a specific donor role.                                                    | `donator listroleplayers keter`            |
-| `donator listalldonations`  | Display a list of all donations on the server.                                                  | `donator listalldonations`                 |
+| Command | Description |
+|---------|-------------|
+| `donator addrole <SteamID64> <roleKey> <days>` | Give a donor role. |
+| `donator removerole <SteamID64>` | Remove donor role. |
+| `donator freezeall <true|false>` | Stop/Resume all donations globally. |
+| `donator freezeplayer <SteamID64> <true|false>` | Stop/Resume one player’s timer. |
+| `donator infoplayer <SteamID64>` | Detailed info on one donation. |
+| `donator listroleplayers <roleKey>` | List everyone with that role. |
+| `donator listalldonations` | Dump every donation entry. |
 
----
-
-## 📋 Configuration
-
-### **Donor Role Configuration**
-Donor roles are now defined in the main EXILED configuration file. Each role includes the following properties:
-- **`name`**: Display name of the role.
-- **`badge_color`**: Badge color in the player list.
-- **`permissions`**: List of allowed commands (e.g., `changerole`, `giveitem`).
-- **`rank_name`**: Rank name displayed in the player list.
-- **`rank_color`**: Color of the rank text.
-- **`customprefixenabled`**: Whether the role allows custom prefixes.
-
-### **Dynamic Donor Data**
-All donor data, such as player SteamIDs, roles, and expiration dates, is stored in a dynamically updated `DonationsData.json` file. Administrative actions from RA (e.g., adding or removing donor roles) automatically update this file.
-
-### **Limits and Restrictions**
-- **`global_command_limits`**: Configure per-round limits for donor commands.
-- **`blacklisted_roles`**: List roles that donors cannot switch to.
-- **`blacklisted_items`**: List items that donors cannot give themselves.
-- **`scp_change_time_limit`**: Time (in seconds) after which donors cannot switch to SCP roles.
+*(Admin commands require the permissions shown above.)*
 
 ---
 
-## 📋 Translation File
+## 📋 Configuration Overview
 
-The `donat_translations.yml` file allows you to customize all player-facing messages.
+| File | Purpose |
+|------|---------|
+| `EXILED/Configs/Ultimate_Donation/Config.yml` | Main plugin config, role presets, limits, blacklist. |
+| `EXILED/Configs/Ultimate_Donation/donat_translations.yml` | All messages / aliases. |
+| `EXILED/Configs/Ultimate_Donation/DonationsData.yml` | **Dynamic** donor storage (autogenerated with sample data). |
 
-### **Key Fields**
-- **Command Feedback**:
-  - `help_donator_command`: Help message for the `donator` command.
-  - `help_changerole_usage`: Usage message for `.changerole`.
-  - `help_giveitem_usage`: Usage message for `.giveitem`.
-  - `mydon_status_info`: Template for `.mydon` output.
+### Role snippet (from Config.yml)
 
-- **Errors and Warnings**:
-  - `only_player_can_use_command`: Error when a non-player uses a player-only command.
-  - `player_object_not_found`: Error when a player's object cannot be retrieved.
-  - `missing_donor_role_in_config`: Error when a donor role is not configured.
+    donator_roles:
+      safe:
+        name: "Safe"
+        badge_color: "green"
+        permissions: [ "changerole", "giveitem" ]
+        rank_name: "SAFE"
+        rank_color: "green"
+        customprefixenabled: false
+      keter:
+        name: "Keter"
+        badge_color: "red"
+        permissions: [ "changerole", "giveitem" ]
+        rank_name: "KETER"
+        rank_color: "red"
+        customprefixenabled: true
+
+### Example entry in DonationsData.yml
+
+    player_donations:
+      - nickname: "ExampleUser"
+        steam_id: "76561198000000000"
+        role: "safe"
+        expiry_date: 2025-01-31
+        is_frozen: false
+
+---
+
+## 📋 Translation File Highlights
+
+`donat_translations.yml` contains every player-facing phrase.  
+Just change the text — no recompilation needed.
+
+    help_changerole_usage: "Usage: .changerole <RoleAlias>"
+    change_role_success: "You changed your role to {roleName}."
+    mydon_status_info: |
+      === Your Donation Status ===
+      - Role: {roleName}
+      - Days Left: {daysLeft}
+      - Usage: {usageSummary}
+
+Placeholders inside braces (`{roleName}`) are replaced automatically.
 
 ---
 
 ## 📋 Requirements
 
-- **EXILED Framework**: This plugin requires EXILED version 9.0.0 or higher. Ensure your server is up-to-date.
+- **EXILED** 9.0.0+ (or compatible Nightly).  
+- Works with **CedMod** & **MER** out of the box.
 
 ---
 
 ## ⚠️ Important Notes
 
-1. **Dynamic Donor Management**: All donor data is stored in `DonationsData.json` and updated automatically by RA commands.
-2. **No Admin Privileges for Donors**: Donors cannot access RA or administrative functions, ensuring balanced gameplay.
-3. **RA Command Integration**: Administrators can fully manage donors through the Remote Admin console.
-4. **Customizable Messages**: Use `donat_translations.yml` to adjust all messages displayed to players.
+1. **Donor ≠ Admin**: even with a Keter badge, donors have *zero* RA access.  
+2. **Real-time data**: `DonationsData.yml` is saved immediately after each RA command.  
+3. **Debug logs**: set `debug: true` in `Config.yml` to trace everything.  
+4. **Wildcard carefully**: giving `donator.*` equals full donation control.
 
 ---
 
-## ✅ What's New
+## ✅ What’s New (v1.1.0)
 
-- **Dynamic Donor Data**: Real-time updates to donor data stored in `DonationsData.json`.
-- **Integrated Role Management**: Roles are defined in the main EXILED configuration file.
-- **Enhanced RA Commands**: Full control over donor roles and privileges through RA.
-- **v1.1.0**: Latest improvements and optimizations.
+- Automatic folder generation `Ultimate_Donation/`.  
+- Sample data inside fresh `DonationsData.yml`.  
+- Permission strings for each admin command.  
+- Cleaner console output (no stray formatting tags).  
 
----
-
-## 📧 Contact and Support
-
-For any questions, issues, or suggestions, please open an issue on the [GitHub repository](https://github.com/D3ltA-O5/Ultimate_Donation) or contact me on Discord: **cyberco**.
+*(Full changelog on the [Releases](https://github.com/D3ltA-O5/Ultimate_Donation/releases) page.)*
 
 ---
 
-Thank you for using **UltimateDonation**! Enjoy managing your SCP: SL server securely and efficiently!
+## 📧 Contact & Support
 
+- **GitHub Issues**: <https://github.com/D3ltA-O5/Ultimate_Donation/issues>  
+- **Discord**: **cyberco**
+
+Thank you for using **UltimateDonation** — happy managing!
