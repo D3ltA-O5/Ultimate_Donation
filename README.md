@@ -97,18 +97,18 @@ Add permission lines into the EXILED permissions file:
 CedMod reads the same permission strings, but you can edit them in the browser:
 
 1. Open **CedMod → Groups**.  
-2. Click **Create** (or edit an existing group).  
+
+2. Click **Create** (or edit an existing group). 
+![CedMod permission UI – placeholder](https://github.com/D3ltA-O5/Ultimate_Donation/blob/main/README_Resources/Screenshot%202025-05-11%20182346.png) 
+
 3. In *Custom permissions* add lines like `donator.addrole` or `donator.*`.  
+![CedMod permission UI 2 – placeholder](https://github.com/D3ltA-O5/Ultimate_Donation/blob/main/README_Resources/Screenshot%202025-05-11%20182505.png) 
+
 4. Save and assign users to that group.
 
 > The change is live instantly — no file editing required.
 
 <div align="center">
-
-<!-- Placeholder — drop your screenshot here -->
-![CedMod permission UI – placeholder](https://github.com/D3ltA-O5/Ultimate_Donation/blob/main/README_Resources/Screenshot%202025-05-11%20182346.png)
-
-*Screenshot: how it looks in CedMod (replace this image).*
 
 </div>
 
