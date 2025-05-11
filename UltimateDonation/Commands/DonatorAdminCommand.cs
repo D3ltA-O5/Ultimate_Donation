@@ -1,11 +1,12 @@
 ﻿using CommandSystem;
 using RemoteAdmin;
 using Exiled.API.Features;
+using Exiled.Permissions.Extensions;
 using System;
 using System.Linq;
 using UltimateDonation;
 
-[CommandHandler(typeof(RemoteAdminCommandHandler))] 
+[CommandHandler(typeof(RemoteAdminCommandHandler))]
 public class DonatorAdminCommand : ICommand
 {
     private readonly RoleManager _roleManager;
@@ -27,7 +28,6 @@ public class DonatorAdminCommand : ICommand
 
     public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
     {
-
         if (!(sender is CommandSender))
         {
             response = "You must run this command in RA console.";
@@ -45,6 +45,12 @@ public class DonatorAdminCommand : ICommand
         {
             case "addrole":
                 {
+                    if (!sender.CheckPermission("donator.addrole"))
+                    {
+                        response = "You don't have permission to add donor roles!";
+                        return false;
+                    }
+
                     if (arguments.Count < 4)
                     {
                         response = "Usage: donator addrole <SteamID64> <roleKey> <days>";
@@ -72,6 +78,12 @@ public class DonatorAdminCommand : ICommand
 
             case "removerole":
                 {
+                    if (!sender.CheckPermission("donator.removerole"))
+                    {
+                        response = "You don't have permission to remove donor roles!";
+                        return false;
+                    }
+
                     if (arguments.Count < 2)
                     {
                         response = "Usage: donator removerole <SteamID64>";
@@ -86,6 +98,12 @@ public class DonatorAdminCommand : ICommand
 
             case "freezeall":
                 {
+                    if (!sender.CheckPermission("donator.freezeall"))
+                    {
+                        response = "You don't have permission to freeze all donor roles!";
+                        return false;
+                    }
+
                     if (arguments.Count < 2)
                     {
                         response = "Usage: donator freezeall <true|false>";
@@ -104,6 +122,12 @@ public class DonatorAdminCommand : ICommand
 
             case "freezeplayer":
                 {
+                    if (!sender.CheckPermission("donator.freezeplayer"))
+                    {
+                        response = "You don't have permission to freeze/unfreeze a single player's donation!";
+                        return false;
+                    }
+
                     if (arguments.Count < 3)
                     {
                         response = "Usage: donator freezeplayer <SteamID64> <true|false>";
@@ -131,6 +155,12 @@ public class DonatorAdminCommand : ICommand
 
             case "infoplayer":
                 {
+                    if (!sender.CheckPermission("donator.infoplayer"))
+                    {
+                        response = "You don't have permission to get info about someone's donation!";
+                        return false;
+                    }
+
                     if (arguments.Count < 2)
                     {
                         response = "Usage: donator infoplayer <SteamID64>";
@@ -160,6 +190,12 @@ public class DonatorAdminCommand : ICommand
 
             case "listroleplayers":
                 {
+                    if (!sender.CheckPermission("donator.listroleplayers"))
+                    {
+                        response = "You don't have permission to list players by donor role!";
+                        return false;
+                    }
+
                     if (arguments.Count < 2)
                     {
                         response = "Usage: donator listroleplayers <roleKey>";
@@ -184,6 +220,12 @@ public class DonatorAdminCommand : ICommand
 
             case "listalldonations":
                 {
+                    if (!sender.CheckPermission("donator.listalldonations"))
+                    {
+                        response = "You don't have permission to list all donations!";
+                        return false;
+                    }
+
                     var all = _roleManager.GetAllDonations();
                     if (all.Count == 0)
                     {

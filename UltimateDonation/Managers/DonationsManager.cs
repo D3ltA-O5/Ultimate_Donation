@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Collections.Generic; // <-- чтобы использовать List<>
 using Exiled.API.Features;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
@@ -15,7 +16,12 @@ public class DonationsManager
     {
         _plugin = plugin;
 
-        _donationsFilePath = Path.Combine(Paths.Configs, "DonationsData.yml");
+        // Создаём поддиректорию "Ultimate_Donation" в EXILED/Configs, если нет
+        string donationFolder = Path.Combine(Paths.Configs, "Ultimate_Donation");
+        Directory.CreateDirectory(donationFolder);
+
+        // Путь для DonationsData.yml в этой новой папке:
+        _donationsFilePath = Path.Combine(donationFolder, "DonationsData.yml");
 
         LoadDonationsData();
     }
@@ -26,8 +32,32 @@ public class DonationsManager
         {
             if (!File.Exists(_donationsFilePath))
             {
-                _plugin.LogDebug($"[DonationsManager] File not found: {_donationsFilePath}. Creating a new empty one.");
-                SaveDonationsData(); 
+                _plugin.LogDebug($"[DonationsManager] File not found: {_donationsFilePath}. Creating a new sample...");
+
+                // Создадим тестовые (пример) записи, чтобы user видел структуру
+                var sampleList = new List<PlayerDonation>
+                {
+                    new PlayerDonation
+                    {
+                        Nickname = "JohnDoeExample",
+                        SteamId = "76561199000000000",
+                        Role = "safe",
+                        ExpiryDate = DateTime.Today.AddDays(7),
+                        IsFrozen = false
+                    },
+                    new PlayerDonation
+                    {
+                        Nickname = "AliceTester",
+                        SteamId = "76561198123456789",
+                        Role = "keter",
+                        ExpiryDate = DateTime.Today.AddDays(30),
+                        IsFrozen = true,
+                        FreezeStartedAt = DateTime.UtcNow.AddDays(-1) // пример
+                    }
+                };
+
+                DonationsData.PlayerDonations = sampleList;
+                SaveDonationsData(); // Сразу сохраним как пример
             }
             else
             {

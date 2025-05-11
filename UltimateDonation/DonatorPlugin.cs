@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 using Exiled.API.Features;
-using Exiled.API.Interfaces; 
+using Exiled.API.Interfaces;
 using Exiled.Events.EventArgs.Server;
 using Exiled.Events.EventArgs.Player;
 using YamlDotNet.Serialization;
@@ -13,10 +13,10 @@ public class DonatorPlugin : Plugin<Config>
 
     private RoleManager _roleManager;
     private CooldownManager _cooldownManager;
-    private Translation _translation; 
+    private Translation _translation;
 
     public override string Name => "UltimateDonation";
-    public override string Author => "cybercodeveloper";
+    public override string Author => "D3ltA_O5";
     public override Version Version => new Version(1, 1, 0);
     public override Version RequiredExiledVersion => new Version(7, 0, 0);
     public ITranslation Translation => _translation;
@@ -97,7 +97,13 @@ public class DonatorPlugin : Plugin<Config>
     {
         try
         {
-            var path = Path.Combine(Paths.Configs, "donat_translations.yml");
+            // 1. Создаём папку Ultimate_Donation (если нет)
+            var donationFolder = Path.Combine(Paths.Configs, "Ultimate_Donation");
+            Directory.CreateDirectory(donationFolder);
+
+            // 2. Наш файл переводов теперь лежит в этой папке
+            var path = Path.Combine(donationFolder, "donat_translations.yml");
+
             if (!File.Exists(path))
             {
                 var defText = @"

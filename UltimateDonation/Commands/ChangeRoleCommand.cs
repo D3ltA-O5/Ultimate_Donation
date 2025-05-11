@@ -1,6 +1,7 @@
 ﻿using CommandSystem;
 using RemoteAdmin;
 using Exiled.API.Features;
+using Exiled.Permissions.Extensions; // <-- подключено
 using System;
 using System.Linq;
 using PlayerRoles;
@@ -28,12 +29,22 @@ public class ChangeRoleCommand : ICommand
     public string[] Aliases => new[] { "cr", "role", "chrole" };
     public string Description => "Donor command to change your role if allowed.";
 
+    // Добавлено для корректного вывода текста с <..> (не удалялись форм. символы).
+    public bool SanitizeResponse => false;
+
     public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
     {
         var t = DonatorPlugin.Instance?.Translation as Translation;
         if (t == null)
         {
             response = "Translation not loaded.";
+            return false;
+        }
+
+        // Проверка прав "donator.changerole"
+        if (!sender.CheckPermission("donator.changerole"))
+        {
+            response = "You don't have permission to use changerole. Required: donator.changerole";
             return false;
         }
 
